@@ -1,70 +1,118 @@
-# Getting Started with Create React App
+# ConnectionAdvisor
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+ConnectionAdvisor is a private dating concierge that helps people make better dating decisions. Add a connection, capture what you know, and get practical recommendations for messages, conversation topics, date-night ideas, and safety reminders.
 
-## Available Scripts
+## What It Does
 
-In the project directory, you can run:
+- Saves dating connections in the browser with localStorage.
+- Scores a connection based on context depth, consistency, and aligned goals.
+- Suggests what to do next: message, plan, keep it light, or gather more signal.
+- Generates message ideas based on stage, interests, and location.
+- Suggests date-night plans by mood, budget, and interests.
+- Includes practical dating tips and safety reminders.
 
-### `npm start`
+## Screens
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+- **Advisor**: compatibility score, recommendation, suggested message, topics, and boundaries.
+- **AI Coach**: ElizaOS-ready coach response with a local fallback when the agent bridge is not running.
+- **Date Ideas**: best-fit plan plus low-key, creative, food, outdoorsy, romantic, and rainy-day options.
+- **Tips**: quick advice cards for messaging, planning, and emotional clarity.
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Tech Stack
 
-### `npm test`
+- React 18
+- Create React App
+- CSS modules via `App.css`
+- Browser localStorage for the first MVP
+- Supabase Auth and Postgres for synced connections
+- ElizaOS agent scaffold in `connectionadvisor-agent`
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+The current MVP runs client-side first so the product can be tested immediately. When Supabase credentials are configured, signed-in users can sync saved connections to Postgres. A good next step is to add a Supabase Edge Function for secure AI advice calls.
 
-### `npm run build`
+## Getting Started
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+```bash
+npm install
+npm start
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Open:
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+```text
+http://localhost:3000
+```
 
-### `npm run eject`
+Build for production:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```bash
+npm run build
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Supabase Setup
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+Create a Supabase project, then open the SQL editor and run:
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+```text
+supabase/schema.sql
+```
 
-## Learn More
+That creates the `connections` table, enables Row Level Security, and adds policies so users can only read, create, update, and delete their own rows.
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+Create a local `.env` file:
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+```bash
+REACT_APP_SUPABASE_URL=your_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_anon_key
+REACT_APP_ELIZAOS_URL=http://localhost:3001
+```
 
-### Code Splitting
+Restart the dev server after editing `.env`.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+The app works in two modes:
 
-### Analyzing the Bundle Size
+- **Local mode**: no Supabase env vars, connections save to localStorage.
+- **Synced mode**: Supabase env vars are present, users sign in by email magic link, and connections save to Supabase.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+## ElizaOS Setup
 
-### Making a Progressive Web App
+This repo includes an ElizaOS-ready dating coach scaffold:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+```text
+connectionadvisor-agent/
+```
 
-### Advanced Configuration
+It contains:
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+- `characters/connection-coach.character.ts`: the ConnectionCoach agent personality, safety boundaries, style, and examples.
+- `.env.example`: local Ollama and PGlite environment variables for an ElizaOS project.
+- `README.md`: setup notes for creating and running the ElizaOS runtime.
 
-### Deployment
+The agent scaffold uses `@elizaos/plugin-ollama` by default so the coach can run against local models through Ollama.
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+The React app has an **AI Coach** tab. By default it uses a local fallback so the product works immediately. To connect a running ElizaOS bridge, create a local `.env` file:
 
-### `npm run build` fails to minify
+```bash
+REACT_APP_ELIZAOS_URL=http://localhost:3001
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+The frontend expects:
+
+```text
+POST /connection-advice
+```
+
+See `connectionadvisor-agent/README.md` for the bridge contract and ElizaOS project setup.
+
+## Product Direction
+
+The best version of ConnectionAdvisor is not another swipe app. It is a private helper for people who are already matching, texting, dating, and deciding what to do next.
+
+Future upgrades:
+
+- Supabase-backed saved connections per user.
+- Supabase Edge Function for secure AI and ElizaOS bridge calls.
+- AI-powered profile bio and prompt coach.
+- Place recommendations using a location API.
+- Weather-aware date plans.
+- Date journal with green flags, yellow flags, and follow-up reminders.
+- Message tone controls: playful, direct, warm, or low-pressure.
