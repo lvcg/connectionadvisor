@@ -24,9 +24,10 @@ ConnectionAdvisor is a private dating concierge that helps people make better da
 - Create React App
 - CSS modules via `App.css`
 - Browser localStorage for the first MVP
+- Supabase Auth and Postgres for synced connections
 - ElizaOS agent scaffold in `connectionadvisor-agent`
 
-The current MVP runs client-side first so the product can be tested immediately. A good next step is to replace localStorage with Supabase Auth, Postgres tables, and an Edge Function for API-backed AI advice.
+The current MVP runs client-side first so the product can be tested immediately. When Supabase credentials are configured, signed-in users can sync saved connections to Postgres. A good next step is to add a Supabase Edge Function for secure AI advice calls.
 
 ## Getting Started
 
@@ -46,6 +47,31 @@ Build for production:
 ```bash
 npm run build
 ```
+
+## Supabase Setup
+
+Create a Supabase project, then open the SQL editor and run:
+
+```text
+supabase/schema.sql
+```
+
+That creates the `connections` table, enables Row Level Security, and adds policies so users can only read, create, update, and delete their own rows.
+
+Create a local `.env` file:
+
+```bash
+REACT_APP_SUPABASE_URL=your_project_url
+REACT_APP_SUPABASE_ANON_KEY=your_anon_key
+REACT_APP_ELIZAOS_URL=http://localhost:3001
+```
+
+Restart the dev server after editing `.env`.
+
+The app works in two modes:
+
+- **Local mode**: no Supabase env vars, connections save to localStorage.
+- **Synced mode**: Supabase env vars are present, users sign in by email magic link, and connections save to Supabase.
 
 ## ElizaOS Setup
 

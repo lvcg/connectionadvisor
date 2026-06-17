@@ -1,6 +1,7 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import "./App.css";
 import { buildLocalCoachResponse, requestElizaAdvice } from "./elizaClient";
+import { isSupabaseConfigured, supabase } from "./supabaseClient";
 
 const starterConnections = [
   {
@@ -61,6 +62,58 @@ const getStoredConnections = () => {
 
 const saveConnections = (connections) => {
   localStorage.setItem("connectionadvisor.connections", JSON.stringify(connections));
+};
+
+const connectionFromRow = (row) => ({
+  id: row.id,
+  name: row.name,
+  stage: row.stage,
+  location: row.location || "",
+  interests: row.interests || "",
+  vibe: row.vibe || "",
+  goals: row.goals || "",
+  notes: row.notes || "",
+  budget: row.budget,
+  mood: row.mood,
+});
+
+const connectionToRow = (connection, userId) => ({
+  user_id: userId,
+  name: connection.name,
+  stage: connection.stage,
+  location: connection.location,
+  interests: connection.interests,
+  vibe: connection.vibe,
+  goals: connection.goals,
+  notes: connection.notes,
+  budget: connection.budget,
+  mood: connection.mood,
+});
+
+const fetchSupabaseConnections = async () => {
+  const { data, error } = await supabase
+    .from("connections")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error) throw error;
+  return data.map(connectionFromRow);
+};
+
+const createSupabaseConnection = async (connection, userId) => {
+  const { data, error } = await supabase
+    .from("connections")
+    .insert(connectionToRow(connection, userId))
+    .select("*")
+    .single();
+
+  if (error) throw error;
+  return connectionFromRow(data);
+};
+
+const deleteSupabaseConnection = async (id) => {
+  const { error } = await supabase.from("connections").delete().eq("id", id);
+  if (error) throw error;
 };
 
 const getCompatibilityScore = (connection) => {
@@ -147,6 +200,73 @@ function App() {
   const [coachResult, setCoachResult] = useState(null);
   const [coachError, setCoachError] = useState("");
   const [coachLoading, setCoachLoading] = useState(false);
+  const [authEmail, setAuthEmail] = useState("");
+  const [backendStatus, setBackendStatus] = useState(
+    isSupabaseConfigured ? "Supabase ready. Sign in to sync." : "Local mode. Add Supabase env vars to sync."
+  );
+  const [backendLoading, setBackendLoading] = useState(false);
+  const [user, setUser] = useState(null);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return undefined;
+
+    let isMounted = true;
+
+    supabase.auth.getSession().then(({ data, error }) => {
+      if (!isMounted) return;
+      if (error) {
+        setBackendStatus(error.message);
+        return;
+      }
+      setUser(data.session?.user || null);
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    if (!user) {
+      setConnections(getStoredConnections());
+      setSelectedId(getStoredConnections()[0]?.id || null);
+      setBackendStatus("Supabase ready. Sign in to sync.");
+      return;
+    }
+
+    let isMounted = true;
+
+    const loadConnections = async () => {
+      setBackendLoading(true);
+      try {
+        const cloudConnections = await fetchSupabaseConnections();
+        if (!isMounted) return;
+        setConnections(cloudConnections);
+        setSelectedId(cloudConnections[0]?.id || null);
+        setBackendStatus("Synced with Supabase.");
+      } catch (error) {
+        if (!isMounted) return;
+        setBackendStatus(error.message);
+      } finally {
+        if (isMounted) setBackendLoading(false);
+      }
+    };
+
+    loadConnections();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const selectedConnection = useMemo(
     () => connections.find((connection) => connection.id === selectedId) || connections[0],
@@ -165,7 +285,7 @@ function App() {
     };
   }, [selectedConnection]);
 
-  const updateConnections = (nextConnections) => {
+  const updateLocalConnections = (nextConnections) => {
     setConnections(nextConnections);
     saveConnections(nextConnections);
   };
@@ -177,7 +297,52 @@ function App() {
     }));
   };
 
-  const addConnection = (event) => {
+  const handleSignIn = async (event) => {
+    event.preventDefault();
+
+    if (!isSupabaseConfigured) {
+      setBackendStatus("Add REACT_APP_SUPABASE_URL and REACT_APP_SUPABASE_ANON_KEY first.");
+      return;
+    }
+
+    if (!authEmail.trim()) {
+      setBackendStatus("Enter your email to get a sign-in link.");
+      return;
+    }
+
+    setBackendLoading(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email: authEmail.trim(),
+      options: {
+        emailRedirectTo: window.location.origin,
+      },
+    });
+    setBackendLoading(false);
+
+    if (error) {
+      setBackendStatus(error.message);
+      return;
+    }
+
+    setBackendStatus("Check your email for the Supabase sign-in link.");
+  };
+
+  const handleSignOut = async () => {
+    if (!isSupabaseConfigured) return;
+
+    setBackendLoading(true);
+    const { error } = await supabase.auth.signOut();
+    setBackendLoading(false);
+
+    if (error) {
+      setBackendStatus(error.message);
+      return;
+    }
+
+    setBackendStatus("Signed out. Local mode restored.");
+  };
+
+  const addConnection = async (event) => {
     event.preventDefault();
     const nextConnection = {
       ...form,
@@ -187,18 +352,56 @@ function App() {
 
     if (!nextConnection.name) return;
 
-    const nextConnections = [nextConnection, ...connections];
-    updateConnections(nextConnections);
-    setSelectedId(nextConnection.id);
-    setForm(emptyForm);
+    setBackendLoading(true);
+
+    try {
+      const savedConnection = user
+        ? await createSupabaseConnection(nextConnection, user.id)
+        : nextConnection;
+
+      const nextConnections = [savedConnection, ...connections];
+
+      if (user) {
+        setConnections(nextConnections);
+        setBackendStatus("Saved to Supabase.");
+      } else {
+        updateLocalConnections(nextConnections);
+      }
+
+      setSelectedId(savedConnection.id);
+      setForm(emptyForm);
+    } catch (error) {
+      setBackendStatus(error.message);
+    } finally {
+      setBackendLoading(false);
+    }
   };
 
-  const deleteConnection = (id) => {
-    const nextConnections = connections.filter((connection) => connection.id !== id);
-    updateConnections(nextConnections);
-    setSelectedId(nextConnections[0]?.id || null);
-    setCoachResult(null);
-    setCoachError("");
+  const deleteConnection = async (id) => {
+    setBackendLoading(true);
+
+    try {
+      if (user) {
+        await deleteSupabaseConnection(id);
+        setBackendStatus("Deleted from Supabase.");
+      }
+
+      const nextConnections = connections.filter((connection) => connection.id !== id);
+
+      if (user) {
+        setConnections(nextConnections);
+      } else {
+        updateLocalConnections(nextConnections);
+      }
+
+      setSelectedId(nextConnections[0]?.id || null);
+      setCoachResult(null);
+      setCoachError("");
+    } catch (error) {
+      setBackendStatus(error.message);
+    } finally {
+      setBackendLoading(false);
+    }
   };
 
   const askCoach = async () => {
@@ -232,6 +435,32 @@ function App() {
             <p>Dating recommendations, tips, and date-night plans.</p>
           </div>
         </div>
+
+        <section className="backend-panel" aria-label="Backend status">
+          <div>
+            <p className="eyebrow">Backend</p>
+            <h2>{user ? "Supabase Sync" : "Local First"}</h2>
+          </div>
+          <p>{backendStatus}</p>
+          {user ? (
+            <button onClick={handleSignOut} disabled={backendLoading} type="button">
+              Sign Out
+            </button>
+          ) : (
+            <form onSubmit={handleSignIn}>
+              <input
+                aria-label="Email for Supabase sign in"
+                onChange={(event) => setAuthEmail(event.target.value)}
+                placeholder="you@example.com"
+                type="email"
+                value={authEmail}
+              />
+              <button disabled={backendLoading || !isSupabaseConfigured} type="submit">
+                Send Link
+              </button>
+            </form>
+          )}
+        </section>
 
         <form className="connection-form" onSubmit={addConnection}>
           <div className="form-heading">
