@@ -84,8 +84,10 @@ connectionadvisor-agent/
 It contains:
 
 - `characters/connection-coach.character.ts`: the ConnectionCoach agent personality, safety boundaries, style, and examples.
-- `.env.example`: placeholder environment variables for an ElizaOS project.
+- `.env.example`: local Ollama and PGlite environment variables for an ElizaOS project.
 - `README.md`: setup notes for creating and running the ElizaOS runtime.
+
+The agent scaffold uses `@elizaos/plugin-ollama` by default so the coach can run against local models through Ollama.
 
 The React app has an **AI Coach** tab. By default it uses a local fallback so the product works immediately. To connect a running ElizaOS bridge, create a local `.env` file:
 

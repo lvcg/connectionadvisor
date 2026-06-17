@@ -3,7 +3,7 @@ export const connectionCoachCharacter = {
   plugins: [
     "@elizaos/plugin-bootstrap",
     "@elizaos/plugin-sql",
-    "@elizaos/plugin-openai",
+    "@elizaos/plugin-ollama",
   ],
   bio: [
     "A private dating advisor for people who want thoughtful, grounded help with modern dating.",
