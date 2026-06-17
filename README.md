@@ -26,7 +26,7 @@ ConnectionAdvisor is a private dating concierge that helps people make better da
 - Browser localStorage for the first MVP
 - ElizaOS agent scaffold in `connectionadvisor-agent`
 
-The repo still includes AWS Amplify scaffolding from the starter project. The current MVP runs client-side first so the product can be tested immediately. A good next step is to replace localStorage with Amplify models for saved connections and add an API-backed AI advice service.
+The current MVP runs client-side first so the product can be tested immediately. A good next step is to replace localStorage with Supabase Auth, Postgres tables, and an Edge Function for API-backed AI advice.
 
 ## Getting Started
 
@@ -81,7 +81,8 @@ The best version of ConnectionAdvisor is not another swipe app. It is a private 
 
 Future upgrades:
 
-- Amplify-backed saved connections per user.
+- Supabase-backed saved connections per user.
+- Supabase Edge Function for secure AI and ElizaOS bridge calls.
 - AI-powered profile bio and prompt coach.
 - Place recommendations using a location API.
 - Weather-aware date plans.
