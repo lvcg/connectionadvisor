@@ -37,7 +37,17 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setLastSavedAt(parsed.savedAt || null);
     }
 
-    if (!supabase) return;
+    const handleSettingsSaved = (event: Event) => {
+      const detail = (event as CustomEvent<{ username?: string; email?: string; savedAt?: string }>).detail;
+      setUsername(formatUsername(detail?.username || detail?.email));
+      setLastSavedAt(detail?.savedAt || new Date().toISOString());
+    };
+
+    window.addEventListener("homey-settings-saved", handleSettingsSaved);
+
+    if (!supabase) {
+      return () => window.removeEventListener("homey-settings-saved", handleSettingsSaved);
+    }
 
     const client = supabase;
     let isMounted = true;
@@ -65,6 +75,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
     return () => {
       isMounted = false;
+      window.removeEventListener("homey-settings-saved", handleSettingsSaved);
     };
   }, [supabase]);
 

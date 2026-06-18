@@ -51,6 +51,10 @@ export function SettingsPanel() {
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
+  const updateSetting = <Key extends keyof SettingsState>(key: Key, value: SettingsState[Key]) => {
+    setSettings((current) => ({ ...current, [key]: value }));
+  };
+
   useEffect(() => {
     const localSettings = localStorage.getItem("homey-settings");
     if (localSettings) {
@@ -114,6 +118,7 @@ export function SettingsPanel() {
     event.preventDefault();
     const savedAt = new Date().toISOString();
     localStorage.setItem("homey-settings", JSON.stringify({ ...settings, savedAt }));
+    window.dispatchEvent(new CustomEvent("homey-settings-saved", { detail: { ...settings, savedAt } }));
     document.documentElement.classList.toggle("dark", settings.darkMode);
 
     if (!supabase || !userId) {
@@ -171,16 +176,16 @@ export function SettingsPanel() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Username">
-              <input value={settings.username} onChange={(event) => setSettings({ ...settings, username: event.target.value })} className="input" placeholder="Flowfxdesignsonline" />
+              <input value={settings.username} onChange={(event) => updateSetting("username", event.target.value)} className="input" placeholder="Flowfxdesignsonline" />
             </Field>
             <Field label="Home name">
-              <input value={settings.homeName} onChange={(event) => setSettings({ ...settings, homeName: event.target.value })} className="input" />
+              <input value={settings.homeName} onChange={(event) => updateSetting("homeName", event.target.value)} className="input" />
             </Field>
             <Field label="Notification email">
-              <input value={settings.email} onChange={(event) => setSettings({ ...settings, email: event.target.value })} className="input" type="email" />
+              <input value={settings.email} onChange={(event) => updateSetting("email", event.target.value)} className="input" type="email" />
             </Field>
             <Field label="Address">
-              <input value={settings.address} onChange={(event) => setSettings({ ...settings, address: event.target.value })} className="input md:col-span-2" />
+              <input value={settings.address} onChange={(event) => updateSetting("address", event.target.value)} className="input md:col-span-2" />
             </Field>
           </div>
         </div>
@@ -198,16 +203,16 @@ export function SettingsPanel() {
 
           <div className="grid gap-4">
             <Field label="Default reminder channel">
-              <select value={settings.reminderChannel} onChange={(event) => setSettings({ ...settings, reminderChannel: event.target.value as ReminderChannel })} className="input">
+              <select value={settings.reminderChannel} onChange={(event) => updateSetting("reminderChannel", event.target.value as ReminderChannel)} className="input">
                 <option value="email">Email</option>
                 <option value="sms">SMS</option>
                 <option value="push">Push</option>
               </select>
             </Field>
-            <Toggle icon={CalendarDays} label="Calendar sync" checked={settings.calendarSync} onChange={(checked) => setSettings({ ...settings, calendarSync: checked })} />
-            <Toggle icon={Mail} label="Receipt scan suggestions" checked={settings.receiptScan} onChange={(checked) => setSettings({ ...settings, receiptScan: checked })} />
+            <Toggle icon={CalendarDays} label="Calendar sync" checked={settings.calendarSync} onChange={(checked) => updateSetting("calendarSync", checked)} />
+            <Toggle icon={Mail} label="Receipt scan suggestions" checked={settings.receiptScan} onChange={(checked) => updateSetting("receiptScan", checked)} />
             <Toggle icon={Moon} label="Dark mode" checked={settings.darkMode} onChange={(checked) => {
-              setSettings({ ...settings, darkMode: checked });
+              updateSetting("darkMode", checked);
               document.documentElement.classList.toggle("dark", checked);
             }} />
           </div>
