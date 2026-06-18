@@ -17,23 +17,23 @@ const navigation = [
   { label: "Login / Signup", href: "/login", icon: LogIn },
 ];
 
-function getFirstName(nameOrEmail?: string | null) {
+function formatUsername(nameOrEmail?: string | null) {
   if (!nameOrEmail) return "there";
   const cleaned = nameOrEmail.includes("@") ? nameOrEmail.split("@")[0] : nameOrEmail;
-  const first = cleaned.trim().split(/\s+/)[0]?.replace(/[._-]+/g, " ");
-  return first ? first.charAt(0).toUpperCase() + first.slice(1) : "there";
+  const username = cleaned.trim().replace(/[._-]+/g, " ");
+  return username ? username.charAt(0).toUpperCase() + username.slice(1) : "there";
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
-  const [firstName, setFirstName] = useState("there");
+  const [username, setUsername] = useState("Flowfxdesignsonline");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
 
   useEffect(() => {
     const localSettings = localStorage.getItem("homey-settings");
     if (localSettings) {
       const parsed = JSON.parse(localSettings);
-      setFirstName(getFirstName(parsed.fullName || parsed.email));
+      setUsername(formatUsername(parsed.username || parsed.fullName || parsed.email));
       setLastSavedAt(parsed.savedAt || null);
     }
 
@@ -56,8 +56,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (!isMounted) return;
 
       const profile = data as { full_name?: string | null; notification_email?: string | null; settings_saved_at?: string | null; updated_at?: string | null } | null;
-      const displaySource = profile?.full_name || activeUser.user_metadata?.full_name || activeUser.user_metadata?.name || profile?.notification_email || activeUser.email;
-      setFirstName(getFirstName(displaySource));
+      const displaySource = profile?.full_name || activeUser.user_metadata?.username || activeUser.user_metadata?.full_name || activeUser.user_metadata?.name || profile?.notification_email || activeUser.email;
+      setUsername(formatUsername(displaySource));
       setLastSavedAt(profile?.settings_saved_at || profile?.updated_at || null);
     }
 
@@ -108,7 +108,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200/70 pb-6 dark:border-white/10 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Home command center</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Welcome back, {firstName}.</h1>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Welcome back, {username}.</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Stay ahead of your home's costs, upkeep, and next priorities.
                 <span className="mt-1 block font-medium text-slate-700 dark:text-slate-300">Last saved: {formatTimestamp(lastSavedAt)}</span>

@@ -7,7 +7,7 @@ import type { ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
 
 type SettingsState = {
-  fullName: string;
+  username: string;
   homeName: string;
   address: string;
   email: string;
@@ -32,7 +32,7 @@ type ProfileRow = {
 };
 
 const defaultSettings: SettingsState = {
-  fullName: "Liv",
+  username: "Flowfxdesignsonline",
   homeName: "QA Test Home",
   address: "100 Test Lane",
   email: "flowfxdesignsonline@gmail.com",
@@ -93,7 +93,7 @@ export function SettingsPanel() {
         ...current,
         homeName: profile.home_name || current.homeName,
         address: profile.home_address || current.address,
-        fullName: profile.full_name && !profile.full_name.includes("@") ? profile.full_name : current.fullName,
+        username: profile.full_name && !profile.full_name.includes("@") ? profile.full_name : current.username,
         email: profile.notification_email || activeUser.email || current.email,
         reminderChannel: profile.reminder_channel || current.reminderChannel,
         calendarSync: typeof profile.calendar_sync === "boolean" ? profile.calendar_sync : current.calendarSync,
@@ -128,7 +128,7 @@ export function SettingsPanel() {
       home_name: settings.homeName,
       home_address: settings.address,
       home_type: "single_family",
-      full_name: settings.fullName,
+      full_name: settings.username,
       notification_email: settings.email,
       reminder_channel: settings.reminderChannel,
       calendar_sync: settings.calendarSync,
@@ -170,8 +170,8 @@ export function SettingsPanel() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="First name">
-              <input value={settings.fullName} onChange={(event) => setSettings({ ...settings, fullName: event.target.value })} className="input" placeholder="Liv" />
+            <Field label="Username">
+              <input value={settings.username} onChange={(event) => setSettings({ ...settings, username: event.target.value })} className="input" placeholder="Flowfxdesignsonline" />
             </Field>
             <Field label="Home name">
               <input value={settings.homeName} onChange={(event) => setSettings({ ...settings, homeName: event.target.value })} className="input" />
