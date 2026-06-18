@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CalendarDays, Home, Mail, Save } from "lucide-react";
+import { Bell, CalendarDays, Home, Mail, Moon, Save } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export function SettingsPanel() {
@@ -13,6 +13,7 @@ export function SettingsPanel() {
     reminderChannel: "email",
     calendarSync: true,
     receiptScan: true,
+    darkMode: false,
   });
   const [message, setMessage] = useState("Login to sync settings to Supabase.");
   const [userId, setUserId] = useState<string | null>(null);
@@ -21,7 +22,9 @@ export function SettingsPanel() {
   useEffect(() => {
     const localSettings = localStorage.getItem("homey-settings");
     if (localSettings) {
-      setSettings((current) => ({ ...current, ...JSON.parse(localSettings) }));
+      const parsedSettings = JSON.parse(localSettings);
+      setSettings((current) => ({ ...current, ...parsedSettings }));
+      document.documentElement.classList.toggle("dark", Boolean(parsedSettings.darkMode));
     }
 
     if (!supabase) {
@@ -67,6 +70,7 @@ export function SettingsPanel() {
   const saveSettings = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     localStorage.setItem("homey-settings", JSON.stringify(settings));
+    document.documentElement.classList.toggle("dark", settings.darkMode);
 
     if (!supabase || !userId) {
       setMessage("Settings saved locally. Login to sync them to Supabase.");
@@ -142,6 +146,10 @@ export function SettingsPanel() {
             </Field>
             <Toggle icon={CalendarDays} label="Calendar sync" checked={settings.calendarSync} onChange={(checked) => setSettings({ ...settings, calendarSync: checked })} />
             <Toggle icon={Mail} label="Receipt scan suggestions" checked={settings.receiptScan} onChange={(checked) => setSettings({ ...settings, receiptScan: checked })} />
+            <Toggle icon={Moon} label="Dark mode" checked={settings.darkMode} onChange={(checked) => {
+              setSettings({ ...settings, darkMode: checked });
+              document.documentElement.classList.toggle("dark", checked);
+            }} />
           </div>
         </div>
 

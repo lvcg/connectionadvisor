@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
-import { CalendarClock, Plus, ShieldCheck, Wrench, X, type LucideIcon } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CalendarClock, FileScan, Pencil, Plus, ShieldCheck, Trash2, Wrench, X, type LucideIcon } from "lucide-react";
 import { appliances as seedAppliances, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { createClient } from "@/lib/supabase/client";
 import type { Appliance, ApplianceStatus } from "@/types/homey";
 
 const statusTone = {
@@ -29,6 +30,22 @@ const emptyAppliance = {
   assignedVendorId: "",
 };
 
+type ApplianceRow = {
+  id: string;
+  vendor_id: string | null;
+  name: string;
+  brand: string | null;
+  model: string | null;
+  location: string | null;
+  install_date: string | null;
+  expected_lifespan_years: number | null;
+  last_service_date: string | null;
+  next_service_date: string | null;
+  warranty_expires: string | null;
+  status: ApplianceStatus;
+  notes: string | null;
+};
+
 function getAge(installDate: string) {
   const installed = new Date(installDate);
   const now = new Date();
@@ -37,17 +54,125 @@ function getAge(installDate: string) {
   return Math.max(0, years + months / 12);
 }
 
+function mapAppliance(row: ApplianceRow): Appliance {
+  return {
+    id: row.id,
+    name: row.name,
+    brand: row.brand || "Unknown brand",
+    model: row.model || "Unknown model",
+    location: row.location || "Unassigned",
+    installDate: row.install_date || new Date().toISOString().slice(0, 10),
+    expectedLifespanYears: row.expected_lifespan_years || 10,
+    lastServiceDate: row.last_service_date || undefined,
+    nextServiceDate: row.next_service_date || new Date().toISOString().slice(0, 10),
+    warrantyExpires: row.warranty_expires || undefined,
+    notes: row.notes || undefined,
+    status: row.status,
+    assignedVendorId: row.vendor_id || undefined,
+  };
+}
+
 export function ApplianceTracker() {
+  const supabase = useMemo(() => createClient(), []);
   const [appliances, setAppliances] = useState(seedAppliances);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingApplianceId, setEditingApplianceId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyAppliance);
+  const [notice, setNotice] = useState("Demo mode. Login to sync appliances and warranty records to Supabase.");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
 
-  const addAppliance = (event: React.FormEvent<HTMLFormElement>) => {
+  useEffect(() => {
+    if (!supabase) {
+      setNotice("Add Supabase env keys to sync appliances.");
+      return;
+    }
+
+    const client = supabase;
+    let isMounted = true;
+
+    async function loadAppliances() {
+      const { data: sessionData } = await client.auth.getSession();
+      const activeUserId = sessionData.session?.user.id;
+
+      if (!activeUserId) {
+        if (isMounted) setNotice("Demo mode. Login to save appliance records to Supabase.");
+        return;
+      }
+
+      setUserId(activeUserId);
+      const { data, error } = await client
+        .from("appliances")
+        .select("id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes")
+        .eq("user_id", activeUserId)
+        .order("created_at", { ascending: false });
+
+      if (!isMounted) return;
+
+      if (error) {
+        setNotice(`Supabase appliances error: ${error.message}`);
+        return;
+      }
+
+      setAppliances((data || []).map((row) => mapAppliance(row as ApplianceRow)));
+      setNotice("Synced with Supabase. Appliance records will save to your account.");
+    }
+
+    loadAppliances();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
+
+  const resetForm = () => {
+    setForm(emptyAppliance);
+    setEditingApplianceId(null);
+    setIsModalOpen(false);
+  };
+
+  const scanWarranty = () => {
+    setForm((current) => ({
+      ...current,
+      name: current.name || "Scanned Dishwasher",
+      brand: current.brand || "Bosch",
+      model: current.model || "SHPM65Z55N",
+      location: current.location || "Kitchen",
+      installDate: current.installDate || "2024-05-01",
+      expectedLifespanYears: current.expectedLifespanYears || "12",
+      warrantyExpires: "2029-05-01",
+      nextServiceDate: current.nextServiceDate || "2026-11-01",
+      notes: `${current.notes ? `${current.notes}\n` : ""}Warranty scan: 5-year limited warranty, keep proof of purchase and serial label photo on file.`,
+      status: "excellent",
+    }));
+    setNotice("Warranty scan extracted appliance, model, warranty date, and service notes.");
+  };
+
+  const openEdit = (appliance: Appliance) => {
+    setEditingApplianceId(appliance.id);
+    setForm({
+      name: appliance.name,
+      brand: appliance.brand,
+      model: appliance.model,
+      location: appliance.location,
+      installDate: appliance.installDate,
+      expectedLifespanYears: String(appliance.expectedLifespanYears),
+      lastServiceDate: appliance.lastServiceDate || "",
+      nextServiceDate: appliance.nextServiceDate,
+      warrantyExpires: appliance.warrantyExpires || "",
+      notes: appliance.notes || "",
+      status: appliance.status,
+      assignedVendorId: appliance.assignedVendorId || "",
+    });
+    setIsModalOpen(true);
+  };
+
+  const saveAppliance = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.name.trim()) return;
 
-    const nextAppliance: Appliance = {
-      id: crypto.randomUUID(),
+    const draft: Appliance = {
+      id: editingApplianceId || crypto.randomUUID(),
       name: form.name.trim(),
       brand: form.brand.trim() || "Unknown brand",
       model: form.model.trim() || "Unknown model",
@@ -62,9 +187,57 @@ export function ApplianceTracker() {
       assignedVendorId: form.assignedVendorId || undefined,
     };
 
-    setAppliances((current) => [nextAppliance, ...current]);
-    setForm(emptyAppliance);
-    setIsModalOpen(false);
+    if (supabase && userId) {
+      setIsSaving(true);
+      const payload = {
+        user_id: userId,
+        vendor_id: draft.assignedVendorId || null,
+        name: draft.name,
+        brand: draft.brand,
+        model: draft.model,
+        location: draft.location,
+        install_date: draft.installDate,
+        expected_lifespan_years: draft.expectedLifespanYears,
+        last_service_date: draft.lastServiceDate || null,
+        next_service_date: draft.nextServiceDate,
+        warranty_expires: draft.warrantyExpires || null,
+        status: draft.status,
+        notes: draft.notes || null,
+      };
+      const request = editingApplianceId
+        ? supabase.from("appliances").update(payload).eq("id", editingApplianceId).select("id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes").single()
+        : supabase.from("appliances").insert(payload).select("id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes").single();
+      const { data, error } = await request;
+      setIsSaving(false);
+
+      if (error) {
+        setNotice(`Could not save appliance: ${error.message}`);
+        return;
+      }
+
+      const saved = mapAppliance(data as ApplianceRow);
+      setAppliances((current) => (editingApplianceId ? current.map((item) => (item.id === editingApplianceId ? saved : item)) : [saved, ...current]));
+      setNotice(`${saved.name} ${editingApplianceId ? "updated" : "saved"} to Supabase.`);
+      resetForm();
+      return;
+    }
+
+    setAppliances((current) => (editingApplianceId ? current.map((item) => (item.id === editingApplianceId ? draft : item)) : [draft, ...current]));
+    setNotice(`${draft.name} ${editingApplianceId ? "updated" : "saved"} locally. Login to sync to Supabase.`);
+    resetForm();
+  };
+
+  const deleteAppliance = async (appliance: Appliance) => {
+    if (supabase && userId && !appliance.id.startsWith("appliance-")) {
+      const { error } = await supabase.from("appliances").delete().eq("id", appliance.id);
+      if (error) {
+        setNotice(`Could not delete appliance: ${error.message}`);
+        return;
+      }
+    }
+
+    setAppliances((current) => current.filter((item) => item.id !== appliance.id));
+    setNotice(`${appliance.name} deleted.`);
   };
 
   return (
@@ -78,15 +251,15 @@ export function ApplianceTracker() {
               Track install dates, expected lifespan, warranty windows, preferred service providers, and upcoming maintenance reminders.
             </p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
-            type="button"
-          >
+          <button onClick={() => setIsModalOpen(true)} className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950" type="button">
             <Plus className="h-4 w-4" />
             Add Appliance
           </button>
         </div>
+      </div>
+
+      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
+        {notice}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-3">
@@ -120,16 +293,24 @@ export function ApplianceTracker() {
                     <span className="text-slate-500">{appliance.expectedLifespanYears} yr lifespan</span>
                   </div>
                   <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-white/10">
-                    <div
-                      className={cn("h-full rounded-full", lifespanProgress > 75 ? "bg-amber-500" : "bg-emerald-500")}
-                      style={{ width: `${lifespanProgress}%` }}
-                    />
+                    <div className={cn("h-full rounded-full", lifespanProgress > 75 ? "bg-amber-500" : "bg-emerald-500")} style={{ width: `${lifespanProgress}%` }} />
                   </div>
                 </div>
 
                 <InfoRow icon={CalendarClock} label="Next service" value={appliance.nextServiceDate} />
                 <InfoRow icon={ShieldCheck} label="Warranty expires" value={appliance.warrantyExpires || "Not tracked"} />
                 <InfoRow icon={Wrench} label="Preferred vendor" value={vendor ? vendor.company : "Unassigned"} />
+              </div>
+
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button onClick={() => openEdit(appliance)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </button>
+                <button onClick={() => deleteAppliance(appliance)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/10">
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
               </div>
             </article>
           );
@@ -138,15 +319,25 @@ export function ApplianceTracker() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
-          <form onSubmit={addAppliance} className="w-full max-w-2xl rounded-[2rem] border border-white/60 bg-white p-6 shadow-glass dark:border-white/10 dark:bg-slate-950">
+          <form onSubmit={saveAppliance} className="w-full max-w-2xl rounded-[2rem] border border-white/60 bg-white p-6 shadow-glass dark:border-white/10 dark:bg-slate-950">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">New appliance</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Add appliance to tracker</h3>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">{editingApplianceId ? "Edit appliance" : "New appliance"}</p>
+                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{editingApplianceId ? "Update appliance tracker" : "Add appliance to tracker"}</h3>
               </div>
-              <button onClick={() => setIsModalOpen(false)} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
                 <X className="h-5 w-5" />
               </button>
+            </div>
+
+            <div className="mb-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-400/20 dark:bg-emerald-400/10">
+              <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+                <p className="text-sm font-medium leading-6 text-emerald-900 dark:text-emerald-100">Scan appliance warranty info to prefill brand, model, warranty date, and notes.</p>
+                <button onClick={scanWarranty} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                  <FileScan className="h-4 w-4" />
+                  Scan warranty
+                </button>
+              </div>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">
@@ -197,11 +388,11 @@ export function ApplianceTracker() {
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
-              <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-                Save appliance
+              <button disabled={isSaving} type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
+                {isSaving ? "Saving..." : editingApplianceId ? "Update appliance" : "Save appliance"}
               </button>
             </div>
           </form>

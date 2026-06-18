@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, CalendarDays, CalendarPlus, Mail, MessageSquareText, Plus, UsersRound, X } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus, Mail, MessageSquareText, Pencil, Plus, Trash2, UsersRound, X } from "lucide-react";
 import { maintenanceTasks, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { MaintenancePriority, MaintenanceStatus, MaintenanceTask, ReminderChannel } from "@/types/homey";
@@ -34,6 +34,7 @@ const emptyTask = {
 export function MaintenanceBoard() {
   const [tasks, setTasks] = useState(maintenanceTasks);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyTask);
   const [notice, setNotice] = useState("Reminder delivery is ready for email, SMS, push, and calendar export.");
 
@@ -55,10 +56,36 @@ export function MaintenanceBoard() {
       status: form.status,
     };
 
-    setTasks((current) => [nextTask, ...current]);
+    setTasks((current) => {
+      if (!editingTaskId) return [nextTask, ...current];
+      return current.map((task) => (task.id === editingTaskId ? { ...nextTask, id: editingTaskId } : task));
+    });
     setForm(emptyTask);
+    setEditingTaskId(null);
     setIsModalOpen(false);
-    setNotice(`${nextTask.title} scheduled with ${nextTask.reminderChannel || "email"} reminder delivery.`);
+    setNotice(`${nextTask.title} ${editingTaskId ? "updated" : "saved"} with ${nextTask.reminderChannel || "email"} reminder delivery.`);
+  };
+
+  const editTask = (task: MaintenanceTask) => {
+    setEditingTaskId(task.id);
+    setForm({
+      title: task.title,
+      area: task.area,
+      cadence: task.cadence,
+      dueDate: task.dueDate,
+      reminderDate: task.reminderDate || "",
+      reminderChannel: task.reminderChannel || "email",
+      assignedVendorId: task.assignedVendorId || "",
+      notes: task.notes || "",
+      priority: task.priority,
+      status: task.status,
+    });
+    setIsModalOpen(true);
+  };
+
+  const deleteTask = (task: MaintenanceTask) => {
+    setTasks((current) => current.filter((item) => item.id !== task.id));
+    setNotice(`${task.title} deleted from maintenance schedule.`);
   };
 
   const sendTestReminder = (task: MaintenanceTask) => {
@@ -167,6 +194,16 @@ export function MaintenanceBoard() {
                   Calendar
                 </button>
               </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
+                <button onClick={() => editTask(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+                  <Pencil className="h-4 w-4" />
+                  Edit
+                </button>
+                <button onClick={() => deleteTask(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-rose-200 text-sm font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/10">
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </button>
+              </div>
             </article>
           );
         })}
@@ -182,9 +219,9 @@ export function MaintenanceBoard() {
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">New reminder</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Schedule repair or maintenance</h3>
+                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{editingTaskId ? "Edit repair or maintenance" : "Schedule repair or maintenance"}</h3>
               </div>
-              <button onClick={() => setIsModalOpen(false)} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
+              <button onClick={() => { setIsModalOpen(false); setEditingTaskId(null); setForm(emptyTask); }} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -237,11 +274,11 @@ export function MaintenanceBoard() {
             </div>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+              <button onClick={() => { setIsModalOpen(false); setEditingTaskId(null); setForm(emptyTask); }} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
               <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-                Save reminder
+                {editingTaskId ? "Update reminder" : "Save reminder"}
               </button>
             </div>
           </form>
