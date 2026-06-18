@@ -96,6 +96,63 @@ The schema creates:
 
 RLS policies ensure authenticated users can only access rows and files scoped to their own `auth.uid()`.
 
+### Auth Setup
+
+In Supabase Auth settings:
+
+- Enable email/password sign-in.
+- Enable magic links if you want passwordless login.
+- Enable Google and GitHub providers if you want OAuth buttons to work.
+- Add these redirect URLs:
+
+```text
+http://localhost:3000/auth/callback
+http://localhost:3005/auth/callback
+http://localhost:3000/auth/update-password
+http://localhost:3005/auth/update-password
+https://your-production-domain.com/auth/callback
+https://your-production-domain.com/auth/update-password
+```
+
+The login page automatically redirects successful auth sessions back to `/dashboard`.
+
+For password recovery, set the Supabase Auth **Site URL** to your Homey app URL, not the old ConnectionAdvisor URL:
+
+```text
+http://localhost:3005
+```
+
+If you customize the recovery email template, make sure the link points to Homey with:
+
+```text
+{{ .ConfirmationURL }}
+```
+
+Homey also preserves Supabase recovery hash links that land on `/`, then forwards them to `/auth/update-password`.
+
+### OAuth Preview Setup
+
+Homey implements the OAuth preview consent route at:
+
+```text
+/oauth/consent
+```
+
+For the local preview authorization URL, use the same port your app is running on:
+
+```text
+http://localhost:3000/oauth/consent
+http://localhost:3005/oauth/consent
+```
+
+Supabase project OAuth endpoints:
+
+```text
+Authorization: https://odxobincteposdhqhxvs.supabase.co/auth/v1/oauth/authorize
+Token: https://odxobincteposdhqhxvs.supabase.co/auth/v1/oauth/token
+JWKS: https://odxobincteposdhqhxvs.supabase.co/auth/v1/.well-known/jwks.json
+```
+
 ## Product Direction
 
 The current UI uses local demo data so the premium experience can be reviewed immediately. The next implementation step is wiring the dashboard and expense forms to Supabase queries/mutations, then adding auth screens and receipt uploads.
