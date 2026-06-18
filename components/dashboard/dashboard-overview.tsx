@@ -15,11 +15,11 @@ export function DashboardOverview() {
   return (
     <div className="space-y-6">
       <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-        <MetricCard title="Total invested" value={formatCurrency(totalInvested)} caption="Across active and completed projects" icon={Hammer} />
-        <MetricCard title="Utility spend" value={formatCurrency(utilitySpend)} caption="Current month tracked bills" icon={ReceiptText} accent="indigo" />
-        <MetricCard title="Upcoming tasks" value={`${upcomingTasks}`} caption="Maintenance items need attention" icon={CalendarClock} accent="amber" />
-        <MetricCard title="Tax deductible" value={formatCurrency(taxDeductible)} caption="Potentially deductible expenses" icon={CircleDollarSign} accent="emerald" />
-        <MetricCard title="Service watch" value={`${serviceSoon}`} caption="Appliances need service review" icon={Refrigerator} accent="rose" />
+        <MetricCard title="Total invested" value={formatCurrency(totalInvested)} caption="Open expense tracker" icon={Hammer} href="/expenses" />
+        <MetricCard title="Utility spend" value={formatCurrency(utilitySpend)} caption="Review monthly bills" icon={ReceiptText} accent="indigo" href="/expenses" />
+        <MetricCard title="Upcoming tasks" value={`${upcomingTasks}`} caption="Open maintenance schedule" icon={CalendarClock} accent="amber" href="/maintenance" />
+        <MetricCard title="Tax deductible" value={formatCurrency(taxDeductible)} caption="Review deductible records" icon={CircleDollarSign} accent="emerald" href="/expenses" />
+        <MetricCard title="Service watch" value={`${serviceSoon}`} caption="Open appliance list" icon={Refrigerator} accent="rose" href="/appliances" />
       </section>
 
       <section className="grid gap-4 xl:grid-cols-[1.25fr_0.75fr]">

@@ -2,12 +2,14 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Chrome, Github, Home, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "signup";
 
 export function LoginPanel() {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
@@ -51,7 +53,14 @@ export function LoginPanel() {
       return;
     }
 
-    setMessage(mode === "login" ? "Signed in. Your Homey workspace is ready." : "Signup created. Check your email if confirmation is enabled.");
+    if (mode === "login") {
+      setMessage("Signed in. Opening your Homey dashboard.");
+      router.replace("/dashboard");
+      router.refresh();
+      return;
+    }
+
+    setMessage("Signup created. Check your email if confirmation is enabled.");
   };
 
   const sendMagicLink = async () => {

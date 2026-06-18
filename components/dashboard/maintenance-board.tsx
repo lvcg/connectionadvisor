@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Bell, CalendarDays, Plus, UsersRound, X } from "lucide-react";
+import { Bell, CalendarDays, CalendarPlus, Mail, MessageSquareText, Plus, UsersRound, X } from "lucide-react";
 import { maintenanceTasks, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { MaintenancePriority, MaintenanceStatus, MaintenanceTask, ReminderChannel } from "@/types/homey";
@@ -34,6 +34,7 @@ export function MaintenanceBoard() {
   const [tasks, setTasks] = useState(maintenanceTasks);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState(emptyTask);
+  const [notice, setNotice] = useState("Reminder delivery is ready for email, SMS, push, and calendar export.");
 
   const addTask = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -55,6 +56,35 @@ export function MaintenanceBoard() {
     setTasks((current) => [nextTask, ...current]);
     setForm(emptyTask);
     setIsModalOpen(false);
+    setNotice(`${nextTask.title} scheduled with ${nextTask.reminderChannel || "email"} reminder delivery.`);
+  };
+
+  const sendTestReminder = (task: MaintenanceTask) => {
+    const channel = task.reminderChannel || "email";
+    setNotice(`Prepared ${channel.toUpperCase()} reminder for "${task.title}". Connect provider keys in Settings to send automatically.`);
+  };
+
+  const downloadCalendarEvent = (task: MaintenanceTask) => {
+    const start = task.dueDate.replaceAll("-", "");
+    const ics = [
+      "BEGIN:VCALENDAR",
+      "VERSION:2.0",
+      "PRODID:-//Homey//Maintenance//EN",
+      "BEGIN:VEVENT",
+      `UID:${task.id}@homey.local`,
+      `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
+      `DTSTART;VALUE=DATE:${start}`,
+      `SUMMARY:${task.title}`,
+      `DESCRIPTION:${task.area} - ${task.cadence}`,
+      "END:VEVENT",
+      "END:VCALENDAR",
+    ].join("\r\n");
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+    link.download = `${task.title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.ics`;
+    link.click();
+    URL.revokeObjectURL(link.href);
+    setNotice(`Calendar file created for "${task.title}".`);
   };
 
   return (
@@ -102,6 +132,13 @@ export function MaintenanceBoard() {
                 </div>
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/5">
                   <span className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
+                    {(task.reminderChannel || "email") === "sms" ? <MessageSquareText className="h-4 w-4" /> : <Mail className="h-4 w-4" />}
+                    Delivery
+                  </span>
+                  <span className="font-semibold uppercase text-slate-900 dark:text-white">{task.reminderChannel || "email"}</span>
+                </div>
+                <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/5">
+                  <span className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
                     <UsersRound className="h-4 w-4" />
                     Vendor
                   </span>
@@ -112,9 +149,23 @@ export function MaintenanceBoard() {
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Due {task.dueDate}</span>
                 <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>
               </div>
+              <div className="mt-4 grid grid-cols-2 gap-2">
+                <button onClick={() => sendTestReminder(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+                  <Bell className="h-4 w-4" />
+                  Test
+                </button>
+                <button onClick={() => downloadCalendarEvent(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
+                  <CalendarPlus className="h-4 w-4" />
+                  Calendar
+                </button>
+              </div>
             </article>
           );
         })}
+      </div>
+
+      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
+        {notice}
       </div>
 
       {isModalOpen && (

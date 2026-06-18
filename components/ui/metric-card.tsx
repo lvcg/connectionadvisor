@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 type MetricCardProps = {
@@ -7,6 +8,7 @@ type MetricCardProps = {
   caption: string;
   icon: LucideIcon;
   accent?: "emerald" | "indigo" | "amber" | "rose";
+  href?: string;
 };
 
 const accents = {
@@ -16,9 +18,9 @@ const accents = {
   rose: "from-rose-500/20 to-rose-500/5 text-rose-600 dark:text-rose-300",
 };
 
-export function MetricCard({ title, value, caption, icon: Icon, accent = "emerald" }: MetricCardProps) {
-  return (
-    <article className="group rounded-3xl border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.06]">
+export function MetricCard({ title, value, caption, icon: Icon, accent = "emerald", href }: MetricCardProps) {
+  const content = (
+    <article className="group h-full rounded-3xl border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.06]">
       <div className="flex items-start justify-between gap-4">
         <div>
           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
@@ -30,5 +32,13 @@ export function MetricCard({ title, value, caption, icon: Icon, accent = "emeral
         </div>
       </div>
     </article>
+  );
+
+  if (!href) return content;
+
+  return (
+    <Link href={href} className="block focus:outline-none focus:ring-4 focus:ring-emerald-500/15">
+      {content}
+    </Link>
   );
 }

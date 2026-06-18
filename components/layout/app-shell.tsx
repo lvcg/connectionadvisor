@@ -7,6 +7,7 @@ const navigation = [
   { label: "Maintenance", href: "/maintenance", icon: CalendarCheck },
   { label: "Appliances", href: "/appliances", icon: Refrigerator },
   { label: "Vendors", href: "/vendors", icon: UsersRound },
+  { label: "Settings", href: "/settings", icon: Settings },
   { label: "Login / Signup", href: "/login", icon: LogIn },
 ];
 
@@ -53,10 +54,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Home command center</p>
               <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Know what your home costs, needs, and earns back.</h1>
             </div>
-            <button className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
+            <Link href="/settings" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
               <Settings className="h-4 w-4" />
               Settings
-            </button>
+            </Link>
           </header>
           {children}
         </main>

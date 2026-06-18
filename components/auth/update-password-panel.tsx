@@ -2,10 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Home, LockKeyhole, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 export function UpdatePasswordPanel() {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -55,7 +57,14 @@ export function UpdatePasswordPanel() {
     setIsSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password });
     setIsSubmitting(false);
-    setMessage(error ? error.message : "Password updated. You can continue to your Homey dashboard.");
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setMessage("Password updated. Opening your Homey dashboard.");
+    router.replace("/dashboard");
+    router.refresh();
   };
 
   return (
