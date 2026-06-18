@@ -7,6 +7,7 @@ import { cn, formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Expense, ExpenseCategory, Project } from "@/types/homey";
 import { Badge } from "@/components/ui/badge";
+import { TaxCreditGuidance } from "@/components/ui/tax-credit-guidance";
 
 const categories: Array<"all" | ExpenseCategory> = ["all", "materials", "labor", "permits", "utilities", "inspection", "design"];
 
@@ -290,9 +291,9 @@ export function ExpenseTracker() {
         <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
           <div>
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Expense organizer</p>
-            <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Projects, utility bills, receipts, and deductions</h2>
+            <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Projects, utility bills, receipts, and optional tax review</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-              Track renovation spend, recurring utility bills, receipt metadata, and tax-deductible home expenses from one refined workspace.
+              Track renovation spend, recurring utility bills, receipt metadata, and records you may want to review for deductions or energy-efficiency credits.
             </p>
           </div>
           <button
@@ -305,6 +306,8 @@ export function ExpenseTracker() {
           </button>
         </div>
       </div>
+
+      <TaxCreditGuidance context="expenses" />
 
       <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-4 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
         <div className="mb-3 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
@@ -458,7 +461,7 @@ export function ExpenseTracker() {
                 type="checkbox"
                 className="h-4 w-4 rounded border-slate-300 text-emerald-600"
               />
-              Mark as tax-deductible
+              Mark for optional tax or energy-credit review
             </label>
 
             <div className="mt-6 flex justify-end gap-3">

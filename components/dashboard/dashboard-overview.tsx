@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarClock, CircleDollarSign, ClipboardList, Hammer, ReceiptText, Refrigerator } from "lucide-react";
+import { ArrowRight, CalendarClock, ClipboardList, Hammer, ReceiptText, Refrigerator } from "lucide-react";
 import { appliances, expenses as seedExpenses, maintenanceTasks } from "@/lib/demo-data";
 import { formatCurrency } from "@/lib/utils";
 import { MetricCard } from "@/components/ui/metric-card";
@@ -78,17 +78,15 @@ export function DashboardOverview() {
 
   const totalInvested = expenses.filter((expense) => expense.category !== "utilities").reduce((sum, expense) => sum + expense.amount, 0);
   const utilitySpend = expenses.filter((expense) => expense.category === "utilities").reduce((sum, expense) => sum + expense.amount, 0);
-  const taxDeductible = expenses.filter((expense) => expense.taxDeductible).reduce((sum, expense) => sum + expense.amount, 0);
   const upcomingTasks = maintenanceTasks.filter((task) => task.status !== "completed").length;
   const serviceSoon = appliances.filter((appliance) => appliance.status === "service-soon" || appliance.status === "replace").length;
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+      <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <MetricCard title="Total invested" value={formatCurrency(totalInvested)} caption="Non-utility expense records" icon={Hammer} href="/expenses" />
         <MetricCard title="Utility spend" value={formatCurrency(utilitySpend)} caption="Review monthly bills" icon={ReceiptText} accent="indigo" href="/expenses" />
         <MetricCard title="Upcoming tasks" value={`${upcomingTasks}`} caption="Open maintenance schedule" icon={CalendarClock} accent="amber" href="/maintenance" />
-        <MetricCard title="Tax deductible" value={formatCurrency(taxDeductible)} caption="Review deductible records" icon={CircleDollarSign} accent="emerald" href="/expenses" />
         <MetricCard title="Service watch" value={`${serviceSoon}`} caption="Open appliance list" icon={Refrigerator} accent="rose" href="/appliances" />
       </section>
 

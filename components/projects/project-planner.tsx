@@ -5,6 +5,7 @@ import { Pencil, Plus, Target, Trash2, X } from "lucide-react";
 import { projects as seedProjects } from "@/lib/demo-data";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
+import { TaxCreditGuidance } from "@/components/ui/tax-credit-guidance";
 import type { Project } from "@/types/homey";
 
 const emptyProject = {
@@ -97,6 +98,8 @@ export function ProjectPlanner() {
       <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
         {message}
       </div>
+
+      <TaxCreditGuidance context="projects" />
 
       <div className="grid gap-4 xl:grid-cols-3">
         {projects.map((project) => {
