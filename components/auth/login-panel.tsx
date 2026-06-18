@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Home, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRight, Chrome, Github, Home, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 type AuthMode = "login" | "signup";
@@ -15,6 +15,11 @@ export function LoginPanel() {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("Sign in to sync expenses, vendors, reminders, and receipt records.");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const getRedirectUrl = () => {
+    if (typeof window === "undefined") return undefined;
+    return `${window.location.origin}/auth/callback?next=/dashboard`;
+  };
 
   const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -42,6 +47,48 @@ export function LoginPanel() {
     }
 
     setMessage(mode === "login" ? "Signed in. Your Homey workspace is ready." : "Signup created. Check your email if confirmation is enabled.");
+  };
+
+  const sendMagicLink = async () => {
+    if (!email.trim()) {
+      setMessage("Enter your email first, then send a magic login link.");
+      return;
+    }
+
+    if (!supabase) {
+      setMessage("Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local to enable magic links.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: getRedirectUrl(),
+      },
+    });
+    setIsSubmitting(false);
+    setMessage(error ? error.message : "Magic link sent. Check your inbox to continue.");
+  };
+
+  const signInWithProvider = async (provider: "github" | "google") => {
+    if (!supabase) {
+      setMessage("Add Supabase env keys and enable the provider in Supabase Auth settings first.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider,
+      options: {
+        redirectTo: getRedirectUrl(),
+      },
+    });
+    setIsSubmitting(false);
+
+    if (error) {
+      setMessage(error.message);
+    }
   };
 
   return (
@@ -122,6 +169,44 @@ export function LoginPanel() {
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
+
+          <div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
+            <span className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
+            Easier sign in
+            <span className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
+          </div>
+
+          <div className="grid gap-3">
+            <button
+              onClick={sendMagicLink}
+              disabled={isSubmitting}
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+              type="button"
+            >
+              <Mail className="h-4 w-4" />
+              Send magic link
+            </button>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <button
+                onClick={() => signInWithProvider("google")}
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                type="button"
+              >
+                <Chrome className="h-4 w-4" />
+                Google
+              </button>
+              <button
+                onClick={() => signInWithProvider("github")}
+                disabled={isSubmitting}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
+                type="button"
+              >
+                <Github className="h-4 w-4" />
+                GitHub
+              </button>
+            </div>
+          </div>
         </section>
       </div>
     </main>

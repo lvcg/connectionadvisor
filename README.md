@@ -96,6 +96,23 @@ The schema creates:
 
 RLS policies ensure authenticated users can only access rows and files scoped to their own `auth.uid()`.
 
+### Auth Setup
+
+In Supabase Auth settings:
+
+- Enable email/password sign-in.
+- Enable magic links if you want passwordless login.
+- Enable Google and GitHub providers if you want OAuth buttons to work.
+- Add these redirect URLs:
+
+```text
+http://localhost:3000/auth/callback
+http://localhost:3005/auth/callback
+https://your-production-domain.com/auth/callback
+```
+
+The login page automatically redirects successful auth sessions back to `/dashboard`.
+
 ## Product Direction
 
 The current UI uses local demo data so the premium experience can be reviewed immediately. The next implementation step is wiring the dashboard and expense forms to Supabase queries/mutations, then adding auth screens and receipt uploads.
