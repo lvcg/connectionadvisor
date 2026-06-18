@@ -244,6 +244,8 @@ create table if not exists public.vault_documents (
   amount numeric(12,2) check (amount is null or amount >= 0),
   document_date date,
   warranty_expires date,
+  ocr_text text,
+  ocr_status text not null default 'pending' check (ocr_status in ('pending', 'processed', 'unavailable', 'failed')),
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()

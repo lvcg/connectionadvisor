@@ -66,8 +66,12 @@ export type VaultDocument = {
   name: string;
   type: VaultDocumentType;
   url: string;
+  storagePath?: string;
+  storageBucket?: string;
   linkedTo: string;
   uploadedAt: string;
+  ocrText?: string;
+  ocrStatus?: "pending" | "processed" | "unavailable" | "failed";
 };
 
 export type Vehicle = {
