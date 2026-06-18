@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { CalendarCheck, Gauge, Home, LogIn, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { CalendarCheck, ClipboardList, Gauge, Home, LogIn, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
 
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: Gauge },
+  { label: "Project Planner", href: "/projects", icon: ClipboardList },
   { label: "Expenses", href: "/expenses", icon: ReceiptText },
   { label: "Maintenance", href: "/maintenance", icon: CalendarCheck },
   { label: "Appliances", href: "/appliances", icon: Refrigerator },

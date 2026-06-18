@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { ArrowUpDown, FileScan, FileText, Plus, Search, X } from "lucide-react";
+import { ArrowUpDown, FileScan, FileText, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { expenses as seedExpenses, projects } from "@/lib/demo-data";
 import { cn, formatCurrency } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
@@ -86,6 +86,7 @@ export function ExpenseTracker() {
   const [category, setCategory] = useState<(typeof categories)[number]>("all");
   const [projectId, setProjectId] = useState("all");
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyExpense);
   const [scanMessage, setScanMessage] = useState("Upload or scan a receipt to prefill record details.");
   const [syncMessage, setSyncMessage] = useState("Demo mode. Sign in to sync expenses with Supabase.");
@@ -179,13 +180,49 @@ export function ExpenseTracker() {
 
   const total = filteredExpenses.reduce((sum, expense) => sum + expense.amount, 0);
 
+  const resetForm = () => {
+    setForm(emptyExpense);
+    setEditingExpenseId(null);
+    setIsModalOpen(false);
+    setScanMessage("Upload or scan a receipt to prefill record details.");
+  };
+
+  const editExpense = (expense: Expense) => {
+    setEditingExpenseId(expense.id);
+    setForm({
+      vendor: expense.vendor,
+      description: expense.description,
+      amount: String(expense.amount),
+      category: expense.category,
+      projectId: expense.projectId || "",
+      date: expense.date,
+      taxDeductible: expense.taxDeductible,
+      documentUrl: expense.documentUrl || "",
+    });
+    setScanMessage("Update the fields that need correcting, then save changes.");
+    setIsModalOpen(true);
+  };
+
+  const deleteExpense = async (expense: Expense) => {
+    if (supabase && userId && !expense.id.startsWith("exp-")) {
+      const { error } = await supabase.from("expenses").delete().eq("id", expense.id);
+      if (error) {
+        setSyncMessage(`Could not delete expense: ${error.message}`);
+        return;
+      }
+    }
+
+    setExpenses((current) => current.filter((item) => item.id !== expense.id));
+    setSyncMessage(`${expense.vendor} expense deleted.`);
+  };
+
   const addExpense = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const amount = Number(form.amount);
     if (!form.vendor.trim() || !form.description.trim() || !Number.isFinite(amount)) return;
 
     const draftExpense: Expense = {
-      id: crypto.randomUUID(),
+      id: editingExpenseId || crypto.randomUUID(),
       vendor: form.vendor.trim(),
       description: form.description.trim(),
       amount,
@@ -198,23 +235,23 @@ export function ExpenseTracker() {
 
     if (supabase && userId) {
       setIsSaving(true);
-      const { data, error } = await supabase
-        .from("expenses")
-        .insert({
-          user_id: userId,
-          vendor: draftExpense.vendor,
-          description: draftExpense.description,
-          amount: draftExpense.amount,
-          category: draftExpense.category,
-          project_id: draftExpense.projectId || null,
-          expense_date: draftExpense.date,
-          tax_deductible: draftExpense.taxDeductible,
-          document_url: draftExpense.documentUrl || null,
-          document_name: draftExpense.documentUrl ? draftExpense.documentUrl.split("/").pop() : null,
-          metadata: { source: "homey-ui" },
-        })
-        .select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url")
-        .single();
+      const payload = {
+        user_id: userId,
+        vendor: draftExpense.vendor,
+        description: draftExpense.description,
+        amount: draftExpense.amount,
+        category: draftExpense.category,
+        project_id: draftExpense.projectId || null,
+        expense_date: draftExpense.date,
+        tax_deductible: draftExpense.taxDeductible,
+        document_url: draftExpense.documentUrl || null,
+        document_name: draftExpense.documentUrl ? draftExpense.documentUrl.split("/").pop() : null,
+        metadata: { source: "homey-ui" },
+      };
+      const request = editingExpenseId && !editingExpenseId.startsWith("exp-")
+        ? supabase.from("expenses").update(payload).eq("id", editingExpenseId).select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url").single()
+        : supabase.from("expenses").insert(payload).select("id,project_id,category,vendor,description,amount,expense_date,tax_deductible,document_url").single();
+      const { data, error } = await request;
       setIsSaving(false);
 
       if (error) {
@@ -222,16 +259,15 @@ export function ExpenseTracker() {
         return;
       }
 
-      setExpenses((current) => [mapExpense(data as SupabaseExpenseRow), ...current]);
-      setSyncMessage("Saved to Supabase.");
+      const savedExpense = mapExpense(data as SupabaseExpenseRow);
+      setExpenses((current) => (editingExpenseId ? current.map((item) => (item.id === editingExpenseId ? savedExpense : item)) : [savedExpense, ...current]));
+      setSyncMessage(`Expense ${editingExpenseId ? "updated" : "saved"} to Supabase.`);
     } else {
-      setExpenses((current) => [draftExpense, ...current]);
-      setSyncMessage("Saved locally. Login to sync new records to Supabase.");
+      setExpenses((current) => (editingExpenseId ? current.map((item) => (item.id === editingExpenseId ? draftExpense : item)) : [draftExpense, ...current]));
+      setSyncMessage(`Expense ${editingExpenseId ? "updated" : "saved"} locally. Login to sync changes to Supabase.`);
     }
 
-    setForm(emptyExpense);
-    setIsModalOpen(false);
-    setScanMessage("Upload or scan a receipt to prefill record details.");
+    resetForm();
   };
 
   const scanReceipt = () => {
@@ -324,6 +360,7 @@ export function ExpenseTracker() {
                   <span className="inline-flex items-center gap-2">Amount <ArrowUpDown className="h-3.5 w-3.5" /></span>
                 </th>
                 <th className="px-5 py-4">Receipt</th>
+                <th className="px-5 py-4">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200/70 dark:divide-white/10">
@@ -343,6 +380,18 @@ export function ExpenseTracker() {
                         {expense.documentUrl ? "Attached" : "Missing"}
                       </span>
                     </td>
+                    <td className="px-5 py-4">
+                      <div className="flex gap-2">
+                        <button onClick={() => editExpense(expense)} type="button" className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+                          <Pencil className="h-3.5 w-3.5" />
+                          Edit
+                        </button>
+                        <button onClick={() => deleteExpense(expense)} type="button" className="inline-flex h-9 items-center justify-center gap-2 rounded-xl border border-rose-200 px-3 text-xs font-semibold text-rose-700 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:text-rose-200 dark:hover:bg-rose-400/10">
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
@@ -356,10 +405,10 @@ export function ExpenseTracker() {
           <form onSubmit={addExpense} className="w-full max-w-2xl rounded-[2rem] border border-white/60 bg-white p-6 shadow-glass dark:border-white/10 dark:bg-slate-950">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">New record</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Add expense or utility bill</h3>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">{editingExpenseId ? "Edit record" : "New record"}</p>
+                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{editingExpenseId ? "Correct expense or utility bill" : "Add expense or utility bill"}</h3>
               </div>
-              <button onClick={() => setIsModalOpen(false)} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -413,11 +462,11 @@ export function ExpenseTracker() {
             </label>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
               <button disabled={isSaving} type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
-                {isSaving ? "Saving..." : "Save record"}
+                {isSaving ? "Saving..." : editingExpenseId ? "Update record" : "Save record"}
               </button>
             </div>
           </form>

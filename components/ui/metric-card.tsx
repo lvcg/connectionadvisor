@@ -21,14 +21,16 @@ const accents = {
 export function MetricCard({ title, value, caption, icon: Icon, accent = "emerald", href }: MetricCardProps) {
   const content = (
     <article className="group h-full rounded-3xl border border-white/70 bg-white/80 p-5 shadow-sm backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.06]">
-      <div className="flex items-start justify-between gap-4">
+      <div className="grid gap-4">
+        <div className="flex items-center gap-3">
+          <div className={cn("grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-gradient-to-br", accents[accent])}>
+            <Icon className="h-5 w-5" />
+          </div>
+          <p className="text-sm font-medium leading-tight text-slate-500 dark:text-slate-400">{title}</p>
+        </div>
         <div>
-          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{title}</p>
           <h3 className="mt-3 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white">{value}</h3>
           <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{caption}</p>
-        </div>
-        <div className={cn("rounded-2xl bg-gradient-to-br p-3", accents[accent])}>
-          <Icon className="h-5 w-5" />
         </div>
       </div>
     </article>
