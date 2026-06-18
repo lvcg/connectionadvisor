@@ -46,6 +46,8 @@ type ApplianceRow = {
   notes: string | null;
 };
 
+const applianceSelect = "id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes";
+
 function getAge(installDate: string) {
   const installed = new Date(installDate);
   const now = new Date();
@@ -101,9 +103,9 @@ export function ApplianceTracker() {
       }
 
       setUserId(activeUserId);
-      const { data, error } = await client
+      let { data, error } = await client
         .from("appliances")
-        .select("id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes")
+        .select(applianceSelect)
         .eq("user_id", activeUserId)
         .order("created_at", { ascending: false });
 
@@ -112,6 +114,38 @@ export function ApplianceTracker() {
       if (error) {
         setNotice(`Supabase appliances error: ${error.message}`);
         return;
+      }
+
+      if (!data || data.length === 0) {
+        const starterAppliances = seedAppliances.map((appliance) => ({
+          user_id: activeUserId,
+          vendor_id: null,
+          name: appliance.name,
+          brand: appliance.brand,
+          model: appliance.model,
+          location: appliance.location,
+          install_date: appliance.installDate,
+          expected_lifespan_years: appliance.expectedLifespanYears,
+          last_service_date: appliance.lastServiceDate || null,
+          next_service_date: appliance.nextServiceDate,
+          warranty_expires: appliance.warrantyExpires || null,
+          status: appliance.status,
+          notes: appliance.notes || null,
+        }));
+
+        const starter = await client
+          .from("appliances")
+          .insert(starterAppliances)
+          .select(applianceSelect);
+
+        if (!isMounted) return;
+
+        if (starter.error) {
+          setNotice(`Could not create starter appliance cards: ${starter.error.message}`);
+          return;
+        }
+
+        data = starter.data;
       }
 
       setAppliances((data || []).map((row) => mapAppliance(row as ApplianceRow)));
@@ -205,8 +239,8 @@ export function ApplianceTracker() {
         notes: draft.notes || null,
       };
       const request = editingApplianceId
-        ? supabase.from("appliances").update(payload).eq("id", editingApplianceId).select("id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes").single()
-        : supabase.from("appliances").insert(payload).select("id,vendor_id,name,brand,model,location,install_date,expected_lifespan_years,last_service_date,next_service_date,warranty_expires,status,notes").single();
+        ? supabase.from("appliances").update(payload).eq("id", editingApplianceId).select(applianceSelect).single()
+        : supabase.from("appliances").insert(payload).select(applianceSelect).single();
       const { data, error } = await request;
       setIsSaving(false);
 
@@ -262,6 +296,31 @@ export function ApplianceTracker() {
         {notice}
       </div>
 
+      <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
+        <div>
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400">Appliance cards</p>
+          <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">Edit service details, warranty notes, and replacement timing.</h3>
+        </div>
+        <p className="text-sm text-slate-500 dark:text-slate-400">{appliances.length} tracked</p>
+      </div>
+
+      {appliances.length === 0 && (
+        <div className="rounded-3xl border border-dashed border-slate-300 bg-white/70 p-8 text-center shadow-sm dark:border-white/15 dark:bg-white/[0.04]">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-slate-950 text-white dark:bg-white dark:text-slate-950">
+            <Wrench className="h-5 w-5" />
+          </div>
+          <h3 className="mt-4 text-lg font-semibold text-slate-950 dark:text-white">No appliance cards yet</h3>
+          <p className="mx-auto mt-2 max-w-xl text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Add appliances like HVAC, water heater, refrigerator, washer, dryer, and range to track age, warranty coverage, service dates, and repair notes.
+          </p>
+          <button onClick={() => setIsModalOpen(true)} type="button" className="mt-5 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
+            <Plus className="h-4 w-4" />
+            Add Appliance
+          </button>
+        </div>
+      )}
+
+      {appliances.length > 0 && (
       <div className="grid gap-4 xl:grid-cols-3">
         {appliances.map((appliance) => {
           const vendor = vendors.find((item) => item.id === appliance.assignedVendorId);
@@ -316,6 +375,7 @@ export function ApplianceTracker() {
           );
         })}
       </div>
+      )}
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
