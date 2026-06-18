@@ -119,7 +119,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200/70 pb-6 dark:border-white/10 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Home command center</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Welcome back, {username}.</h1>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">{username}</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Stay ahead of your home's costs, upkeep, and next priorities.
                 <span className="mt-1 block font-medium text-slate-700 dark:text-slate-300">Last saved: {formatTimestamp(lastSavedAt)}</span>
