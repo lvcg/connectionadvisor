@@ -2,14 +2,17 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Home, LockKeyhole, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { friendlyAuthError, passwordPolicyMessage } from "@/lib/auth/security";
 
 export function UpdatePasswordPanel() {
+  const router = useRouter();
   const supabase = useMemo(() => createClient(), []);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("Enter a new password for your Homey account.");
+  const [message, setMessage] = useState("Enter a new password for your DomiVault account.");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -18,19 +21,24 @@ export function UpdatePasswordPanel() {
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const accessToken = hash.get("access_token");
     const refreshToken = hash.get("refresh_token");
+    const type = hash.get("type");
 
     if (!accessToken || !refreshToken) return;
+    if (type && type !== "recovery") {
+      setMessage("Open a valid password recovery link to update your password.");
+      return;
+    }
 
     supabase.auth
       .setSession({ access_token: accessToken, refresh_token: refreshToken })
       .then(({ error }) => {
         if (error) {
-          setMessage(error.message);
+          setMessage(friendlyAuthError(error.message));
           return;
         }
 
         window.history.replaceState(null, "", window.location.pathname);
-        setMessage("Recovery verified. Enter a new Homey password.");
+        setMessage("Recovery verified. Enter a new DomiVault password.");
       });
   }, [supabase]);
 
@@ -38,12 +46,13 @@ export function UpdatePasswordPanel() {
     event.preventDefault();
 
     if (!supabase) {
-      setMessage("Add Supabase env keys to .env.local to update your password.");
+      setMessage("Add cloud auth env keys to .env.local to update your password.");
       return;
     }
 
-    if (password.length < 6) {
-      setMessage("Password must be at least 6 characters.");
+    const policyError = passwordPolicyMessage(password);
+    if (policyError) {
+      setMessage(policyError);
       return;
     }
 
@@ -55,7 +64,14 @@ export function UpdatePasswordPanel() {
     setIsSubmitting(true);
     const { error } = await supabase.auth.updateUser({ password });
     setIsSubmitting(false);
-    setMessage(error ? error.message : "Password updated. You can continue to your Homey dashboard.");
+    if (error) {
+      setMessage(friendlyAuthError(error.message));
+      return;
+    }
+
+    setMessage("Password updated. Opening your DomiVault dashboard.");
+    router.replace("/dashboard");
+    router.refresh();
   };
 
   return (
@@ -67,17 +83,17 @@ export function UpdatePasswordPanel() {
               <Home className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-lg font-semibold tracking-tight">Homey</span>
+              <span className="block text-lg font-semibold tracking-tight">DomiVault</span>
               <span className="text-xs opacity-60">Secure recovery</span>
             </span>
           </Link>
 
           <p className="mt-10 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Password recovery</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            Reset your Homey password.
+            Reset your DomiVault password.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400">
-            Use the recovery email from Supabase to create a new password, then continue managing your home records.
+            Use the recovery email to create a new password, then continue managing your home records.
           </p>
         </section>
 
@@ -87,20 +103,20 @@ export function UpdatePasswordPanel() {
           </div>
           <h2 className="text-2xl font-semibold text-slate-950 dark:text-white">Create new password</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            This page only works after opening a valid Supabase recovery link.
+            This page only works after opening a valid password recovery link.
           </p>
 
           <form onSubmit={updatePassword} className="mt-6 space-y-4">
             <Field label="New password">
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={password} onChange={(event) => setPassword(event.target.value)} className="input pl-10" placeholder="Minimum 6 characters" type="password" required />
+                <input value={password} onChange={(event) => setPassword(event.target.value)} className="input pl-10" placeholder="12+ chars, number, symbol" type="password" autoComplete="new-password" minLength={12} required />
               </div>
             </Field>
             <Field label="Confirm password">
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="input pl-10" placeholder="Re-enter password" type="password" required />
+                <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="input pl-10" placeholder="Re-enter password" type="password" autoComplete="new-password" minLength={12} required />
               </div>
             </Field>
 

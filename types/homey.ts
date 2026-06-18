@@ -5,6 +5,9 @@ export type MaintenanceStatus = "pending" | "overdue" | "completed";
 export type ReminderChannel = "email" | "push" | "sms";
 export type ApplianceStatus = "excellent" | "monitor" | "service-soon" | "replace";
 export type VendorType = "plumbing" | "electrical" | "hvac" | "roofing" | "landscaping" | "general" | "appliance" | "cleaning";
+export type PlanTier = "free" | "vault_plus";
+export type VaultDocumentType = "receipt" | "warranty" | "photo" | "report" | "vehicle";
+export type VehicleStatus = "excellent" | "monitor" | "service-soon" | "repair";
 
 export type Project = {
   id: string;
@@ -31,6 +34,7 @@ export type MaintenanceTask = {
   id: string;
   title: string;
   area: string;
+  notes?: string;
   cadence: string;
   dueDate: string;
   reminderDate?: string;
@@ -48,11 +52,36 @@ export type Appliance = {
   location: string;
   installDate: string;
   expectedLifespanYears: number;
+  notes?: string;
   lastServiceDate?: string;
   nextServiceDate: string;
   warrantyExpires?: string;
+  warrantyDocumentUrl?: string;
   status: ApplianceStatus;
   assignedVendorId?: string;
+};
+
+export type VaultDocument = {
+  id: string;
+  name: string;
+  type: VaultDocumentType;
+  url: string;
+  linkedTo: string;
+  uploadedAt: string;
+};
+
+export type Vehicle = {
+  id: string;
+  name: string;
+  make: string;
+  model: string;
+  year: number;
+  mileage: number;
+  vin?: string;
+  lastServiceDate?: string;
+  nextServiceDate: string;
+  notes?: string;
+  status: VehicleStatus;
 };
 
 export type Vendor = {

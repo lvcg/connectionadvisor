@@ -1,4 +1,4 @@
-import type { Appliance, Expense, MaintenanceTask, Project, Vendor } from "@/types/homey";
+import type { Appliance, Expense, MaintenanceTask, Project, VaultDocument, Vehicle, Vendor } from "@/types/homey";
 
 export const projects: Project[] = [
   { id: "kitchen", name: "Kitchen Remodel", area: "Kitchen", budget: 42000, spent: 28750, status: "active" },
@@ -54,6 +54,7 @@ export const maintenanceTasks: MaintenanceTask[] = [
     id: "task-1",
     title: "Change HVAC filter",
     area: "Mechanical",
+    notes: "Keep two 20x25x1 filters in storage and note airflow direction before removing the old filter.",
     cadence: "Every 3 months",
     dueDate: "2026-06-28",
     reminderDate: "2026-06-24",
@@ -66,6 +67,7 @@ export const maintenanceTasks: MaintenanceTask[] = [
     id: "task-2",
     title: "Clean gutters",
     area: "Exterior",
+    notes: "Check downspouts for clogs and photograph any loose flashing while the ladder is out.",
     cadence: "Every 6 months",
     dueDate: "2026-06-18",
     reminderDate: "2026-06-16",
@@ -78,6 +80,7 @@ export const maintenanceTasks: MaintenanceTask[] = [
     id: "task-3",
     title: "Flush water heater",
     area: "Utility",
+    notes: "Attach hose before opening drain valve and listen for popping sounds after refill.",
     cadence: "Annually",
     dueDate: "2026-07-15",
     reminderDate: "2026-07-08",
@@ -97,6 +100,7 @@ export const appliances: Appliance[] = [
     location: "Attic",
     installDate: "2018-04-12",
     expectedLifespanYears: 15,
+    notes: "Ask vendor to inspect refrigerant level during fall service.",
     lastServiceDate: "2026-03-22",
     nextServiceDate: "2026-09-22",
     warrantyExpires: "2028-04-12",
@@ -111,6 +115,7 @@ export const appliances: Appliance[] = [
     location: "Garage",
     installDate: "2020-01-08",
     expectedLifespanYears: 12,
+    notes: "Flush annually and keep a copy of warranty paperwork with service records.",
     lastServiceDate: "2025-07-15",
     nextServiceDate: "2026-07-15",
     warrantyExpires: "2030-01-08",
@@ -125,6 +130,7 @@ export const appliances: Appliance[] = [
     location: "Kitchen",
     installDate: "2017-09-01",
     expectedLifespanYears: 13,
+    notes: "Monitor temperature drift and ice maker noise before summer service.",
     lastServiceDate: "2024-11-18",
     nextServiceDate: "2026-08-01",
     warrantyExpires: "2022-09-01",
@@ -181,6 +187,53 @@ export const vendors: Vendor[] = [
     rating: 4.6,
     preferred: true,
     notes: "Good for refrigerator, washer, dryer, and range service.",
+  },
+];
+
+export const vaultDocuments: VaultDocument[] = [
+  {
+    id: "doc-1",
+    name: "Kitchen quartz receipt.pdf",
+    type: "receipt",
+    url: "receipts/kitchen-quartz.pdf",
+    linkedTo: "exp-1",
+    uploadedAt: "2026-06-02",
+  },
+  {
+    id: "doc-2",
+    name: "HVAC warranty card.jpg",
+    type: "warranty",
+    url: "warranties/hvac-card.jpg",
+    linkedTo: "appliance-1",
+    uploadedAt: "2026-03-22",
+  },
+];
+
+export const vehicles: Vehicle[] = [
+  {
+    id: "vehicle-1",
+    name: "Daily Driver",
+    make: "Toyota",
+    model: "Camry",
+    year: 2021,
+    mileage: 48200,
+    vin: "4T1G11AK0MU000000",
+    lastServiceDate: "2026-05-14",
+    nextServiceDate: "2026-09-14",
+    notes: "Track oil changes, tire rotations, registration renewal, brake service, and warranty documents.",
+    status: "monitor",
+  },
+  {
+    id: "vehicle-2",
+    name: "Work SUV",
+    make: "Honda",
+    model: "Pilot",
+    year: 2019,
+    mileage: 73100,
+    lastServiceDate: "2026-04-02",
+    nextServiceDate: "2026-07-02",
+    notes: "Front brake inspection due soon. Keep repair invoices for resale and warranty history.",
+    status: "service-soon",
   },
 ];
 
