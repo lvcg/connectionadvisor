@@ -108,10 +108,25 @@ In Supabase Auth settings:
 ```text
 http://localhost:3000/auth/callback
 http://localhost:3005/auth/callback
+http://localhost:3000/auth/update-password
+http://localhost:3005/auth/update-password
 https://your-production-domain.com/auth/callback
+https://your-production-domain.com/auth/update-password
 ```
 
 The login page automatically redirects successful auth sessions back to `/dashboard`.
+
+For password recovery, set the Supabase Auth **Site URL** to your Homey app URL, not the old ConnectionAdvisor URL:
+
+```text
+http://localhost:3005
+```
+
+If you customize the recovery email template, make sure the link points to Homey with:
+
+```text
+{{ .ConfirmationURL }}
+```
 
 ### OAuth Preview Setup
 

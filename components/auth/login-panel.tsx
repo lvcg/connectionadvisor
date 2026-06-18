@@ -21,6 +21,11 @@ export function LoginPanel() {
     return `${window.location.origin}/auth/callback?next=/dashboard`;
   };
 
+  const getPasswordRecoveryUrl = () => {
+    if (typeof window === "undefined") return undefined;
+    return `${window.location.origin}/auth/callback?next=/auth/update-password`;
+  };
+
   const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
@@ -89,6 +94,25 @@ export function LoginPanel() {
     if (error) {
       setMessage(error.message);
     }
+  };
+
+  const sendPasswordRecovery = async () => {
+    if (!email.trim()) {
+      setMessage("Enter your email first, then request a password reset.");
+      return;
+    }
+
+    if (!supabase) {
+      setMessage("Add Supabase env keys to .env.local to enable password recovery.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: getPasswordRecoveryUrl(),
+    });
+    setIsSubmitting(false);
+    setMessage(error ? error.message : "Password reset email sent. Use the Homey reset link in your inbox.");
   };
 
   return (
@@ -169,6 +193,17 @@ export function LoginPanel() {
               <ArrowRight className="h-4 w-4" />
             </button>
           </form>
+
+          {mode === "login" && (
+            <button
+              onClick={sendPasswordRecovery}
+              disabled={isSubmitting}
+              className="mt-3 w-full rounded-2xl px-4 py-2 text-sm font-semibold text-emerald-700 transition-all duration-200 hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-60 dark:text-emerald-300 dark:hover:bg-emerald-400/10"
+              type="button"
+            >
+              Forgot password?
+            </button>
+          )}
 
           <div className="my-5 flex items-center gap-3 text-xs font-semibold uppercase tracking-[0.18em] text-slate-400">
             <span className="h-px flex-1 bg-slate-200 dark:bg-white/10" />
