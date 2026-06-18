@@ -113,6 +113,29 @@ https://your-production-domain.com/auth/callback
 
 The login page automatically redirects successful auth sessions back to `/dashboard`.
 
+### OAuth Preview Setup
+
+Homey implements the OAuth preview consent route at:
+
+```text
+/oauth/consent
+```
+
+For the local preview authorization URL, use the same port your app is running on:
+
+```text
+http://localhost:3000/oauth/consent
+http://localhost:3005/oauth/consent
+```
+
+Supabase project OAuth endpoints:
+
+```text
+Authorization: https://odxobincteposdhqhxvs.supabase.co/auth/v1/oauth/authorize
+Token: https://odxobincteposdhqhxvs.supabase.co/auth/v1/oauth/token
+JWKS: https://odxobincteposdhqhxvs.supabase.co/auth/v1/.well-known/jwks.json
+```
+
 ## Product Direction
 
 The current UI uses local demo data so the premium experience can be reviewed immediately. The next implementation step is wiring the dashboard and expense forms to Supabase queries/mutations, then adding auth screens and receipt uploads.
