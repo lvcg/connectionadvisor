@@ -1,0 +1,138 @@
+"use client";
+
+import { useMemo, useState } from "react";
+import Link from "next/link";
+import { ArrowRight, Home, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+
+type AuthMode = "login" | "signup";
+
+export function LoginPanel() {
+  const supabase = useMemo(() => createClient(), []);
+  const [mode, setMode] = useState<AuthMode>("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [message, setMessage] = useState("Sign in to sync expenses, vendors, reminders, and receipt records.");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const submitAuth = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+
+    if (!supabase) {
+      setMessage("Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local to enable auth.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    const result =
+      mode === "login"
+        ? await supabase.auth.signInWithPassword({ email, password })
+        : await supabase.auth.signUp({
+            email,
+            password,
+            options: { data: { full_name: name } },
+          });
+
+    setIsSubmitting(false);
+
+    if (result.error) {
+      setMessage(result.error.message);
+      return;
+    }
+
+    setMessage(mode === "login" ? "Signed in. Your Homey workspace is ready." : "Signup created. Check your email if confirmation is enabled.");
+  };
+
+  return (
+    <main className="min-h-screen px-4 py-6 sm:px-6 lg:px-8">
+      <div className="mx-auto grid min-h-[calc(100vh-3rem)] max-w-6xl items-center gap-6 lg:grid-cols-[1fr_480px]">
+        <section className="rounded-[2rem] border border-white/70 bg-white/75 p-6 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.05] sm:p-8">
+          <Link href="/dashboard" className="inline-flex items-center gap-3 rounded-3xl bg-slate-950 p-3 pr-5 text-white dark:bg-white dark:text-slate-950">
+            <span className="grid h-11 w-11 place-items-center rounded-2xl bg-emerald-400 text-slate-950">
+              <Home className="h-5 w-5" />
+            </span>
+            <span>
+              <span className="block text-lg font-semibold tracking-tight">Homey</span>
+              <span className="text-xs opacity-60">Home intelligence</span>
+            </span>
+          </Link>
+
+          <p className="mt-10 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Private home command center</p>
+          <h1 className="mt-3 max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
+            Login or create an account to keep your home records synced.
+          </h1>
+          <p className="mt-4 max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400">
+            Manage improvement costs, recurring bills, appliances, preferred vendors, service history, and reminders from one polished dashboard.
+          </p>
+
+          <div className="mt-8 grid gap-3 sm:grid-cols-3">
+            {["Expenses", "Vendors", "Reminders"].map((item) => (
+              <div key={item} className="rounded-3xl border border-slate-200/70 bg-slate-50/80 p-4 text-sm font-semibold text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+                <ShieldCheck className="mb-3 h-5 w-5 text-emerald-600 dark:text-emerald-300" />
+                {item}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-[2rem] border border-white/70 bg-white/90 p-6 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/85">
+          <div className="mb-6 grid grid-cols-2 rounded-2xl bg-slate-100 p-1 dark:bg-white/10">
+            <button
+              onClick={() => setMode("login")}
+              className={`h-11 rounded-xl text-sm font-semibold transition-all duration-200 ${mode === "login" ? "bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 dark:text-slate-300"}`}
+              type="button"
+            >
+              Login
+            </button>
+            <button
+              onClick={() => setMode("signup")}
+              className={`h-11 rounded-xl text-sm font-semibold transition-all duration-200 ${mode === "signup" ? "bg-white text-slate-950 shadow-sm dark:bg-slate-950 dark:text-white" : "text-slate-500 dark:text-slate-300"}`}
+              type="button"
+            >
+              Sign up
+            </button>
+          </div>
+
+          <form onSubmit={submitAuth} className="space-y-4">
+            {mode === "signup" && (
+              <Field label="Full name">
+                <input value={name} onChange={(event) => setName(event.target.value)} className="input" placeholder="Your name" />
+              </Field>
+            )}
+            <Field label="Email">
+              <div className="relative">
+                <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={email} onChange={(event) => setEmail(event.target.value)} className="input pl-10" placeholder="you@example.com" type="email" required />
+              </div>
+            </Field>
+            <Field label="Password">
+              <div className="relative">
+                <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input value={password} onChange={(event) => setPassword(event.target.value)} className="input pl-10" placeholder="Minimum 6 characters" type="password" required />
+              </div>
+            </Field>
+
+            <p className="rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-sm leading-6 text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
+              {message}
+            </p>
+
+            <button disabled={isSubmitting} className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950" type="submit">
+              {isSubmitting ? "Working..." : mode === "login" ? "Login" : "Create account"}
+              <ArrowRight className="h-4 w-4" />
+            </button>
+          </form>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label className="grid gap-2 text-sm font-semibold text-slate-700 dark:text-slate-200">
+      {label}
+      {children}
+    </label>
+  );
+}
