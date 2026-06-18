@@ -1,39 +1,61 @@
-# ConnectionAdvisor
+# Homey
 
-ConnectionAdvisor is a private dating concierge that helps people make better dating decisions. Add a connection, capture what you know, and get practical recommendations for messages, conversation topics, date-night ideas, and safety reminders.
+Homey is a premium home improvement and maintenance tracker for homeowners who want one polished place to manage renovation spend, recurring utility bills, receipts, tax-deductible expenses, appliance service schedules, repair reminders, and trusted home vendors.
 
-## What It Does
+## Core Experience
 
-- Saves dating connections in the browser with localStorage.
-- Scores a connection based on context depth, consistency, and aligned goals.
-- Suggests what to do next: message, plan, keep it light, or gather more signal.
-- Generates message ideas based on stage, interests, and location.
-- Suggests date-night plans by mood, budget, and interests.
-- Includes practical dating tips and safety reminders.
+- Premium dashboard with total home investment, monthly utility spend, upcoming maintenance, and deductible expense metrics.
+- Expense and bill organizer for materials, labor, permits, utilities, inspections, and design costs.
+- Interactive expense table with search, category filtering, project filtering, receipt metadata, and an add-record modal.
+- Login and signup page powered by Supabase Auth environment keys.
+- Input workflows for expenses, utility bills, vendors, and maintenance reminders.
+- Project budget progress with amount spent vs. total budget.
+- Maintenance routine scheduler for recurring tasks like HVAC filters, gutters, and water heater flushes.
+- Appliance lifecycle tracker with install dates, expected lifespan, age progress, warranty dates, last service, and next service dates.
+- Repair and maintenance reminders with due dates, reminder channels, vendor assignments, and reminder status architecture.
+- Vendor address book for plumbers, HVAC techs, roofers, appliance repair, and other preferred service contacts.
+- Supabase schema with auth-scoped RLS across profiles, projects, expenses, bills, maintenance tasks, appliances, vendors, service events, reminders, and receipt storage.
 
-## Screens
+## Stack
 
-- **Advisor**: compatibility score, recommendation, suggested message, topics, and boundaries.
-- **AI Coach**: ElizaOS-ready coach response with a local fallback when the agent bridge is not running.
-- **Date Ideas**: best-fit plan plus low-key, creative, food, outdoorsy, romantic, and rainy-day options.
-- **Tips**: quick advice cards for messaging, planning, and emotional clarity.
+- Next.js App Router
+- TypeScript
+- Tailwind CSS
+- Supabase Auth, Postgres, Storage
+- Recharts
+- Lucide icons
 
-## Tech Stack
+## Folder Structure
 
-- React 18
-- Create React App
-- CSS modules via `App.css`
-- Browser localStorage for the first MVP
-- Supabase Auth and Postgres for synced connections
-- ElizaOS agent scaffold in `connectionadvisor-agent`
-
-The current MVP runs client-side first so the product can be tested immediately. When Supabase credentials are configured, signed-in users can sync saved connections to Postgres. A good next step is to add a Supabase Edge Function for secure AI advice calls.
+```text
+app/
+  appliances/
+  dashboard/
+  expenses/
+  login/
+  maintenance/
+  vendors/
+components/
+  appliances/
+  auth/
+  dashboard/
+  expenses/
+  layout/
+  ui/
+  vendors/
+hooks/
+lib/
+  supabase/
+supabase/
+  schema.sql
+types/
+```
 
 ## Getting Started
 
 ```bash
 npm install
-npm start
+npm run dev
 ```
 
 Open:
@@ -42,77 +64,38 @@ Open:
 http://localhost:3000
 ```
 
-Build for production:
+## Environment
+
+Create `.env.local`:
 
 ```bash
-npm run build
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 ## Supabase Setup
 
-Create a Supabase project, then open the SQL editor and run:
+In the Supabase SQL editor, run:
 
 ```text
 supabase/schema.sql
 ```
 
-That creates the `connections` table, enables Row Level Security, and adds policies so users can only read, create, update, and delete their own rows.
+The schema creates:
 
-Create a local `.env` file:
+- `profiles`
+- `projects`
+- `expenses`
+- `bills`
+- `maintenance_tasks`
+- `appliances`
+- `vendors`
+- `service_events`
+- `reminders`
+- private `receipts` storage bucket
 
-```bash
-REACT_APP_SUPABASE_URL=your_project_url
-REACT_APP_SUPABASE_ANON_KEY=your_anon_key
-REACT_APP_ELIZAOS_URL=http://localhost:3001
-```
-
-Restart the dev server after editing `.env`.
-
-The app works in two modes:
-
-- **Local mode**: no Supabase env vars, connections save to localStorage.
-- **Synced mode**: Supabase env vars are present, users sign in by email magic link, and connections save to Supabase.
-
-## ElizaOS Setup
-
-This repo includes an ElizaOS-ready dating coach scaffold:
-
-```text
-connectionadvisor-agent/
-```
-
-It contains:
-
-- `characters/connection-coach.character.ts`: the ConnectionCoach agent personality, safety boundaries, style, and examples.
-- `.env.example`: local Ollama and PGlite environment variables for an ElizaOS project.
-- `README.md`: setup notes for creating and running the ElizaOS runtime.
-
-The agent scaffold uses `@elizaos/plugin-ollama` by default so the coach can run against local models through Ollama.
-
-The React app has an **AI Coach** tab. By default it uses a local fallback so the product works immediately. To connect a running ElizaOS bridge, create a local `.env` file:
-
-```bash
-REACT_APP_ELIZAOS_URL=http://localhost:3001
-```
-
-The frontend expects:
-
-```text
-POST /connection-advice
-```
-
-See `connectionadvisor-agent/README.md` for the bridge contract and ElizaOS project setup.
+RLS policies ensure authenticated users can only access rows and files scoped to their own `auth.uid()`.
 
 ## Product Direction
 
-The best version of ConnectionAdvisor is not another swipe app. It is a private helper for people who are already matching, texting, dating, and deciding what to do next.
-
-Future upgrades:
-
-- Supabase-backed saved connections per user.
-- Supabase Edge Function for secure AI and ElizaOS bridge calls.
-- AI-powered profile bio and prompt coach.
-- Place recommendations using a location API.
-- Weather-aware date plans.
-- Date journal with green flags, yellow flags, and follow-up reminders.
-- Message tone controls: playful, direct, warm, or low-pressure.
+The current UI uses local demo data so the premium experience can be reviewed immediately. The next implementation step is wiring the dashboard and expense forms to Supabase queries/mutations, then adding auth screens and receipt uploads.

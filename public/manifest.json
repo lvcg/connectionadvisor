@@ -1,6 +1,6 @@
 {
-  "short_name": "Advisor",
-  "name": "ConnectionAdvisor",
+  "short_name": "Homey",
+  "name": "Homey Home Improvement Tracker",
   "icons": [
     {
       "src": "favicon.ico",
@@ -20,6 +20,6 @@
   ],
   "start_url": ".",
   "display": "standalone",
-  "theme_color": "#b83264",
-  "background_color": "#fffafa"
+  "theme_color": "#0f172a",
+  "background_color": "#f8fafc"
 }
