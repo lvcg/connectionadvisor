@@ -128,6 +128,8 @@ If you customize the recovery email template, make sure the link points to Homey
 {{ .ConfirmationURL }}
 ```
 
+Homey also preserves Supabase recovery hash links that land on `/`, then forwards them to `/auth/update-password`.
+
 ### OAuth Preview Setup
 
 Homey implements the OAuth preview consent route at:

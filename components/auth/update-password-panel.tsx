@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowRight, Home, LockKeyhole, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -11,6 +11,28 @@ export function UpdatePasswordPanel() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [message, setMessage] = useState("Enter a new password for your Homey account.");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
+    const accessToken = hash.get("access_token");
+    const refreshToken = hash.get("refresh_token");
+
+    if (!accessToken || !refreshToken) return;
+
+    supabase.auth
+      .setSession({ access_token: accessToken, refresh_token: refreshToken })
+      .then(({ error }) => {
+        if (error) {
+          setMessage(error.message);
+          return;
+        }
+
+        window.history.replaceState(null, "", window.location.pathname);
+        setMessage("Recovery verified. Enter a new Homey password.");
+      });
+  }, [supabase]);
 
   const updatePassword = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
