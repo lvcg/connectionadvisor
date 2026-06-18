@@ -44,7 +44,7 @@ export function TaxCreditGuidance({ context }: TaxCreditGuidanceProps) {
       </div>
       <div className="mt-4 flex gap-3 rounded-2xl border border-emerald-300/70 bg-white/70 p-3 text-sm leading-6 text-emerald-950 dark:border-emerald-300/20 dark:bg-white/10 dark:text-emerald-50">
         <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0" />
-        <p>Homey helps organize records for review. It does not provide tax advice or certify that an expense qualifies for a credit.</p>
+        <p>DomiVault helps organize records for review. It does not provide tax advice or certify that an expense qualifies for a credit.</p>
       </div>
     </section>
   );

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarCheck, ClipboardList, Gauge, Home, LogIn, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatTimestamp } from "@/lib/utils";
 
@@ -12,8 +12,11 @@ const navigation = [
   { label: "Expenses", href: "/expenses", icon: ReceiptText },
   { label: "Maintenance", href: "/maintenance", icon: CalendarCheck },
   { label: "Appliances", href: "/appliances", icon: Refrigerator },
+  { label: "Vehicles", href: "/vehicles", icon: Car },
   { label: "Vendors", href: "/vendors", icon: UsersRound },
+  { label: "Reports", href: "/reports", icon: FileText },
   { label: "Settings", href: "/settings", icon: Settings },
+  { label: "FAQ", href: "/faq", icon: FileQuestion },
   { label: "Login / Signup", href: "/login", icon: LogIn },
 ];
 
@@ -88,8 +91,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Home className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-lg font-semibold tracking-tight">Homey</span>
-              <span className="text-xs text-white/60 dark:text-slate-500">Home intelligence</span>
+              <span className="block text-lg font-semibold tracking-tight">DomiVault</span>
+              <span className="text-xs text-white/60 dark:text-slate-500">Home and vehicle vault</span>
             </span>
           </Link>
 

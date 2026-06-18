@@ -82,7 +82,7 @@ export function LoginPanel() {
     }
 
     if (mode === "login") {
-      setMessage("Signed in. Opening your Homey dashboard.");
+      setMessage("Signed in. Opening your DomiVault dashboard.");
       router.replace(getNextPath());
       router.refresh();
       return;
@@ -163,8 +163,8 @@ export function LoginPanel() {
               <Home className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-lg font-semibold tracking-tight">Homey</span>
-              <span className="text-xs opacity-60">Home intelligence</span>
+              <span className="block text-lg font-semibold tracking-tight">DomiVault</span>
+              <span className="text-xs opacity-60">Home and vehicle vault</span>
             </span>
           </Link>
 

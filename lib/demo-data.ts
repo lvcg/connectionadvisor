@@ -1,4 +1,4 @@
-import type { Appliance, Expense, MaintenanceTask, Project, Vendor } from "@/types/homey";
+import type { Appliance, Expense, MaintenanceTask, Project, VaultDocument, Vehicle, Vendor } from "@/types/homey";
 
 export const projects: Project[] = [
   { id: "kitchen", name: "Kitchen Remodel", area: "Kitchen", budget: 42000, spent: 28750, status: "active" },
@@ -187,6 +187,53 @@ export const vendors: Vendor[] = [
     rating: 4.6,
     preferred: true,
     notes: "Good for refrigerator, washer, dryer, and range service.",
+  },
+];
+
+export const vaultDocuments: VaultDocument[] = [
+  {
+    id: "doc-1",
+    name: "Kitchen quartz receipt.pdf",
+    type: "receipt",
+    url: "receipts/kitchen-quartz.pdf",
+    linkedTo: "exp-1",
+    uploadedAt: "2026-06-02",
+  },
+  {
+    id: "doc-2",
+    name: "HVAC warranty card.jpg",
+    type: "warranty",
+    url: "warranties/hvac-card.jpg",
+    linkedTo: "appliance-1",
+    uploadedAt: "2026-03-22",
+  },
+];
+
+export const vehicles: Vehicle[] = [
+  {
+    id: "vehicle-1",
+    name: "Daily Driver",
+    make: "Toyota",
+    model: "Camry",
+    year: 2021,
+    mileage: 48200,
+    vin: "4T1G11AK0MU000000",
+    lastServiceDate: "2026-05-14",
+    nextServiceDate: "2026-09-14",
+    notes: "Track oil changes, tire rotations, registration renewal, brake service, and warranty documents.",
+    status: "monitor",
+  },
+  {
+    id: "vehicle-2",
+    name: "Work SUV",
+    make: "Honda",
+    model: "Pilot",
+    year: 2019,
+    mileage: 73100,
+    lastServiceDate: "2026-04-02",
+    nextServiceDate: "2026-07-02",
+    notes: "Front brake inspection due soon. Keep repair invoices for resale and warranty history.",
+    status: "service-soon",
   },
 ];
 

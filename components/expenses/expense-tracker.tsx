@@ -8,6 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import type { Expense, ExpenseCategory, Project } from "@/types/homey";
 import { Badge } from "@/components/ui/badge";
 import { TaxCreditGuidance } from "@/components/ui/tax-credit-guidance";
+import { PremiumLock } from "@/components/ui/premium-lock";
+import { DocumentUploadCard } from "@/components/ui/document-upload-card";
 
 const categories: Array<"all" | ExpenseCategory> = ["all", "materials", "labor", "permits", "utilities", "inspection", "design"];
 
@@ -463,6 +465,12 @@ export function ExpenseTracker() {
               />
               Mark for optional tax or energy-credit review
             </label>
+
+            <div className="mt-4">
+              <PremiumLock title="Receipt storage" description="Scan, upload, rename, and delete receipt files with secure document history on DomiVault Plus.">
+                <DocumentUploadCard locked title="Receipt documents" description="Attach photos, PDFs, and scanned receipt images to this expense." type="receipt" />
+              </PremiumLock>
+            </div>
 
             <div className="mt-6 flex justify-end gap-3">
               <button onClick={resetForm} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">

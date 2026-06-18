@@ -7,6 +7,8 @@ import { Badge } from "@/components/ui/badge";
 import { cn, formatTimestamp } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Appliance, ApplianceStatus } from "@/types/homey";
+import { PremiumLock } from "@/components/ui/premium-lock";
+import { DocumentUploadCard } from "@/components/ui/document-upload-card";
 
 const statusTone = {
   excellent: "emerald",
@@ -72,6 +74,16 @@ function mapAppliance(row: ApplianceRow): Appliance {
     status: row.status,
     assignedVendorId: row.vendor_id || undefined,
   };
+}
+
+function getWarrantyAlert(appliance: Appliance) {
+  if (!appliance.warrantyExpires) return null;
+  const today = new Date();
+  const expires = new Date(appliance.warrantyExpires);
+  const days = Math.ceil((expires.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  if (days < 0) return `Warranty expired ${Math.abs(days)} days ago.`;
+  if (days <= 90) return `Warranty expires in ${days} days.`;
+  return null;
 }
 
 export function ApplianceTracker() {
@@ -326,6 +338,7 @@ export function ApplianceTracker() {
           const vendor = vendors.find((item) => item.id === appliance.assignedVendorId);
           const age = getAge(appliance.installDate);
           const lifespanProgress = Math.min(100, Math.round((age / appliance.expectedLifespanYears) * 100));
+          const warrantyAlert = getWarrantyAlert(appliance);
 
           return (
             <article key={appliance.id} className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:border-white/10 dark:bg-white/[0.05]">
@@ -342,6 +355,11 @@ export function ApplianceTracker() {
                 <div className="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 text-sm leading-6 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
                   <span className="font-semibold text-slate-900 dark:text-white">Notes: </span>
                   {appliance.notes}
+                </div>
+              )}
+              {warrantyAlert && (
+                <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-900 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-100">
+                  Expiration alert: {warrantyAlert}
                 </div>
               )}
 
@@ -398,6 +416,12 @@ export function ApplianceTracker() {
                   Scan warranty
                 </button>
               </div>
+            </div>
+
+            <div className="mb-4">
+              <PremiumLock title="Warranty document vault" description="Store warranty PDFs, serial-label photos, purchase receipts, and repair documents with edit/delete controls on DomiVault Plus.">
+                <DocumentUploadCard locked title="Warranty documents" description="Scan or upload warranty docs and product photos for this appliance." type="warranty" />
+              </PremiumLock>
             </div>
 
             <div className="grid gap-4 md:grid-cols-2">

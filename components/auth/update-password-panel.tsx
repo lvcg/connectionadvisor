@@ -12,7 +12,7 @@ export function UpdatePasswordPanel() {
   const supabase = useMemo(() => createClient(), []);
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("Enter a new password for your Homey account.");
+  const [message, setMessage] = useState("Enter a new password for your DomiVault account.");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ export function UpdatePasswordPanel() {
         }
 
         window.history.replaceState(null, "", window.location.pathname);
-        setMessage("Recovery verified. Enter a new Homey password.");
+        setMessage("Recovery verified. Enter a new DomiVault password.");
       });
   }, [supabase]);
 
@@ -69,7 +69,7 @@ export function UpdatePasswordPanel() {
       return;
     }
 
-    setMessage("Password updated. Opening your Homey dashboard.");
+    setMessage("Password updated. Opening your DomiVault dashboard.");
     router.replace("/dashboard");
     router.refresh();
   };
@@ -83,14 +83,14 @@ export function UpdatePasswordPanel() {
               <Home className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-lg font-semibold tracking-tight">Homey</span>
+              <span className="block text-lg font-semibold tracking-tight">DomiVault</span>
               <span className="text-xs opacity-60">Secure recovery</span>
             </span>
           </Link>
 
           <p className="mt-10 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Password recovery</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            Reset your Homey password.
+            Reset your DomiVault password.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400">
             Use the recovery email to create a new password, then continue managing your home records.

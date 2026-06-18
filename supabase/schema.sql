@@ -51,6 +51,21 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
+do $$ begin
+  create type public.plan_tier as enum ('free', 'vault_plus');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.vault_document_type as enum ('receipt', 'warranty', 'photo', 'report', 'vehicle');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.vehicle_status as enum ('excellent', 'monitor', 'service-soon', 'repair');
+exception when duplicate_object then null;
+end $$;
+
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
   full_name text,
@@ -68,6 +83,7 @@ alter table public.profiles add column if not exists calendar_sync boolean not n
 alter table public.profiles add column if not exists receipt_scan boolean not null default true;
 alter table public.profiles add column if not exists dark_mode boolean not null default false;
 alter table public.profiles add column if not exists settings_saved_at timestamptz;
+alter table public.profiles add column if not exists plan_tier public.plan_tier not null default 'free';
 
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
@@ -213,6 +229,64 @@ create table if not exists public.reminders (
   check (maintenance_task_id is not null or appliance_id is not null)
 );
 
+create table if not exists public.vault_documents (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  expense_id uuid references public.expenses(id) on delete set null,
+  appliance_id uuid references public.appliances(id) on delete set null,
+  maintenance_task_id uuid references public.maintenance_tasks(id) on delete set null,
+  service_event_id uuid references public.service_events(id) on delete set null,
+  document_type public.vault_document_type not null,
+  name text not null,
+  storage_bucket text not null default 'receipts',
+  storage_path text not null,
+  vendor text,
+  amount numeric(12,2) check (amount is null or amount >= 0),
+  document_date date,
+  warranty_expires date,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.vehicles (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  vendor_id uuid references public.vendors(id) on delete set null,
+  name text not null,
+  make text,
+  model text,
+  year integer check (year is null or (year >= 1900 and year <= extract(year from now())::integer + 1)),
+  vin text,
+  mileage integer not null default 0 check (mileage >= 0),
+  purchase_date date,
+  last_service_date date,
+  next_service_date date,
+  warranty_expires date,
+  registration_expires date,
+  insurance_expires date,
+  status public.vehicle_status not null default 'excellent',
+  notes text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table if not exists public.vehicle_service_events (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references auth.users(id) on delete cascade,
+  vehicle_id uuid not null references public.vehicles(id) on delete cascade,
+  vendor_id uuid references public.vendors(id) on delete set null,
+  service_date date not null,
+  service_type text not null,
+  description text,
+  mileage integer check (mileage is null or mileage >= 0),
+  cost numeric(12,2) check (cost is null or cost >= 0),
+  next_service_date date,
+  document_url text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create or replace function public.set_updated_at()
 returns trigger
 language plpgsql
@@ -268,6 +342,21 @@ create trigger reminders_set_updated_at
 before update on public.reminders
 for each row execute function public.set_updated_at();
 
+drop trigger if exists vault_documents_set_updated_at on public.vault_documents;
+create trigger vault_documents_set_updated_at
+before update on public.vault_documents
+for each row execute function public.set_updated_at();
+
+drop trigger if exists vehicles_set_updated_at on public.vehicles;
+create trigger vehicles_set_updated_at
+before update on public.vehicles
+for each row execute function public.set_updated_at();
+
+drop trigger if exists vehicle_service_events_set_updated_at on public.vehicle_service_events;
+create trigger vehicle_service_events_set_updated_at
+before update on public.vehicle_service_events
+for each row execute function public.set_updated_at();
+
 create index if not exists projects_user_status_idx on public.projects(user_id, status);
 create index if not exists expenses_user_date_idx on public.expenses(user_id, expense_date desc);
 create index if not exists expenses_project_idx on public.expenses(project_id);
@@ -282,6 +371,12 @@ create index if not exists maintenance_user_status_idx on public.maintenance_tas
 create index if not exists maintenance_vendor_idx on public.maintenance_tasks(vendor_id);
 create index if not exists service_events_user_date_idx on public.service_events(user_id, service_date desc);
 create index if not exists reminders_user_status_time_idx on public.reminders(user_id, status, reminder_at);
+create index if not exists vault_documents_user_type_idx on public.vault_documents(user_id, document_type);
+create index if not exists vault_documents_user_date_idx on public.vault_documents(user_id, document_date desc);
+create index if not exists vehicles_user_status_idx on public.vehicles(user_id, status);
+create index if not exists vehicles_user_next_service_idx on public.vehicles(user_id, next_service_date);
+create index if not exists vehicle_service_events_user_date_idx on public.vehicle_service_events(user_id, service_date desc);
+create index if not exists vehicle_service_events_vehicle_idx on public.vehicle_service_events(vehicle_id, service_date desc);
 
 alter table public.profiles enable row level security;
 alter table public.projects enable row level security;
@@ -292,6 +387,9 @@ alter table public.appliances enable row level security;
 alter table public.maintenance_tasks enable row level security;
 alter table public.service_events enable row level security;
 alter table public.reminders enable row level security;
+alter table public.vault_documents enable row level security;
+alter table public.vehicles enable row level security;
+alter table public.vehicle_service_events enable row level security;
 
 create policy "Users manage own profile"
 on public.profiles for all
@@ -343,6 +441,24 @@ with check (auth.uid() = user_id);
 
 create policy "Users manage own reminders"
 on public.reminders for all
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Users manage own vault documents"
+on public.vault_documents for all
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Users manage own vehicles"
+on public.vehicles for all
+to authenticated
+using (auth.uid() = user_id)
+with check (auth.uid() = user_id);
+
+create policy "Users manage own vehicle service events"
+on public.vehicle_service_events for all
 to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);

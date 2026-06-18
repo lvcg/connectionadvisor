@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, CalendarDays, Home, Mail, Moon, Save } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
-import type { ReminderChannel } from "@/types/homey";
+import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
 
 type SettingsState = {
@@ -15,6 +15,7 @@ type SettingsState = {
   calendarSync: boolean;
   receiptScan: boolean;
   darkMode: boolean;
+  planTier: PlanTier;
 };
 
 type ProfileRow = {
@@ -27,6 +28,7 @@ type ProfileRow = {
   calendar_sync?: boolean | null;
   receipt_scan?: boolean | null;
   dark_mode?: boolean | null;
+  plan_tier?: PlanTier | null;
   settings_saved_at?: string | null;
   updated_at?: string | null;
 };
@@ -40,6 +42,7 @@ const defaultSettings: SettingsState = {
   calendarSync: true,
   receiptScan: true,
   darkMode: false,
+  planTier: "free",
 };
 
 export function SettingsPanel() {
@@ -103,6 +106,7 @@ export function SettingsPanel() {
         calendarSync: typeof profile.calendar_sync === "boolean" ? profile.calendar_sync : current.calendarSync,
         receiptScan: typeof profile.receipt_scan === "boolean" ? profile.receipt_scan : current.receiptScan,
         darkMode: typeof profile.dark_mode === "boolean" ? profile.dark_mode : current.darkMode,
+        planTier: profile.plan_tier || current.planTier,
       }));
       document.documentElement.classList.toggle("dark", Boolean(profile.dark_mode));
       const loadedAt = profile.settings_saved_at || profile.updated_at || null;
@@ -139,6 +143,7 @@ export function SettingsPanel() {
       calendar_sync: settings.calendarSync,
       receipt_scan: settings.receiptScan,
       dark_mode: settings.darkMode,
+      plan_tier: settings.planTier,
       settings_saved_at: savedAt,
     });
     setIsSaving(false);
@@ -197,7 +202,7 @@ export function SettingsPanel() {
             </div>
             <div>
               <h3 className="text-lg font-semibold text-slate-950 dark:text-white">Automation defaults</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400">Control how Homey prepares reminders.</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Control how DomiVault prepares reminders.</p>
             </div>
           </div>
 
@@ -220,6 +225,17 @@ export function SettingsPanel() {
 
         <div className="xl:col-span-2 rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
           {message}
+        </div>
+
+        <div className="xl:col-span-2 rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
+          <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Plan</p>
+          <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{settings.planTier === "free" ? "DomiVault Free" : "DomiVault Plus"}</h3>
+          <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+            Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports.
+          </p>
+          <button onClick={() => updateSetting("planTier", settings.planTier === "free" ? "vault_plus" : "free")} type="button" className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white dark:bg-white dark:text-slate-950">
+            {settings.planTier === "free" ? "Preview Plus" : "Switch to Free Preview"}
+          </button>
         </div>
 
         <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">

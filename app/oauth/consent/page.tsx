@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Home, ShieldCheck } from "lucide-react";
 
 const permissions = [
-  "Create and update your Homey profile",
+  "Create and update your DomiVault profile",
   "Sync expenses, vendors, appliances, and maintenance reminders",
   "Keep your records protected by secure account access and owner-only data rules",
 ];
@@ -17,14 +17,14 @@ export default function OAuthConsentPage() {
               <Home className="h-5 w-5" />
             </span>
             <span>
-              <span className="block text-lg font-semibold tracking-tight">Homey</span>
+              <span className="block text-lg font-semibold tracking-tight">DomiVault</span>
               <span className="text-xs opacity-60">OAuth preview</span>
             </span>
           </Link>
 
           <p className="mt-10 text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Authorization consent</p>
           <h1 className="mt-3 max-w-2xl text-4xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-5xl">
-            Connect your Homey workspace.
+            Connect your DomiVault workspace.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400">
             This preview route is ready for OAuth consent testing. Continue to login, then return to the dashboard.
@@ -35,9 +35,9 @@ export default function OAuthConsentPage() {
           <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-emerald-500 text-white">
             <ShieldCheck className="h-6 w-6" />
           </div>
-          <h2 className="text-2xl font-semibold text-slate-950 dark:text-white">Allow Homey access</h2>
+          <h2 className="text-2xl font-semibold text-slate-950 dark:text-white">Allow DomiVault access</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Homey will only access records scoped to your authenticated account.
+            DomiVault will only access records scoped to your authenticated account.
           </p>
 
           <div className="mt-6 grid gap-3">

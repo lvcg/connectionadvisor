@@ -61,6 +61,8 @@ export const config = {
     "/appliances/:path*",
     "/vendors/:path*",
     "/projects/:path*",
+    "/vehicles/:path*",
+    "/reports/:path*",
     "/settings/:path*",
   ],
 };

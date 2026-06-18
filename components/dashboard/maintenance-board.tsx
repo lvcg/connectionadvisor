@@ -6,6 +6,7 @@ import { maintenanceTasks, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { MaintenancePriority, MaintenanceStatus, MaintenanceTask, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
+import { PremiumLock } from "@/components/ui/premium-lock";
 
 const priorityTone = {
   critical: "rose",
@@ -99,9 +100,9 @@ export function MaintenanceBoard() {
     const ics = [
       "BEGIN:VCALENDAR",
       "VERSION:2.0",
-      "PRODID:-//Homey//Maintenance//EN",
+      "PRODID:-//DomiVault//Maintenance//EN",
       "BEGIN:VEVENT",
-      `UID:${task.id}@homey.local`,
+      `UID:${task.id}@domivault.local`,
       `DTSTAMP:${new Date().toISOString().replace(/[-:]/g, "").split(".")[0]}Z`,
       `DTSTART;VALUE=DATE:${start}`,
       `SUMMARY:${task.title}`,
@@ -213,6 +214,8 @@ export function MaintenanceBoard() {
       <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
         {notice}
       </div>
+
+      <PremiumLock title="Google Calendar sync and maintenance history" description="Add reminders to Google Calendar, keep completed maintenance history, and export service records with DomiVault Plus." />
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
