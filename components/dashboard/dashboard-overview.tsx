@@ -39,7 +39,7 @@ function mapExpense(row: ExpenseRow): Expense {
 export function DashboardOverview() {
   const supabase = useMemo(() => createClient(), []);
   const [expenses, setExpenses] = useState(seedExpenses);
-  const [syncMessage, setSyncMessage] = useState("Dashboard is using demo expense data. Login and run the Supabase schema to sync.");
+  const [syncMessage, setSyncMessage] = useState("Dashboard is using demo expense data. Login and run the database setup to sync.");
 
   useEffect(() => {
     if (!supabase) return;
@@ -61,12 +61,12 @@ export function DashboardOverview() {
       if (!isMounted) return;
 
       if (error) {
-        setSyncMessage(`Dashboard could not load Supabase expenses: ${error.message}`);
+        setSyncMessage(`Dashboard could not load synced expenses: ${error.message}`);
         return;
       }
 
       setExpenses((data || []).map((row) => mapExpense(row as ExpenseRow)));
-      setSyncMessage("Dashboard totals are calculated from your Supabase expense records.");
+      setSyncMessage("Dashboard totals are calculated from your synced expense records.");
     }
 
     loadExpenses();

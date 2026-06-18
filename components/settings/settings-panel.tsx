@@ -3,19 +3,51 @@
 import { useEffect, useMemo, useState } from "react";
 import { Bell, CalendarDays, Home, Mail, Moon, Save } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import type { ReminderChannel } from "@/types/homey";
+import { formatTimestamp } from "@/lib/utils";
+
+type SettingsState = {
+  fullName: string;
+  homeName: string;
+  address: string;
+  email: string;
+  reminderChannel: ReminderChannel;
+  calendarSync: boolean;
+  receiptScan: boolean;
+  darkMode: boolean;
+};
+
+type ProfileRow = {
+  full_name?: string | null;
+  home_name?: string | null;
+  home_address?: string | null;
+  home_type?: string | null;
+  notification_email?: string | null;
+  reminder_channel?: ReminderChannel | null;
+  calendar_sync?: boolean | null;
+  receipt_scan?: boolean | null;
+  dark_mode?: boolean | null;
+  settings_saved_at?: string | null;
+  updated_at?: string | null;
+};
+
+const defaultSettings: SettingsState = {
+  fullName: "Liv",
+  homeName: "QA Test Home",
+  address: "100 Test Lane",
+  email: "flowfxdesignsonline@gmail.com",
+  reminderChannel: "email",
+  calendarSync: true,
+  receiptScan: true,
+  darkMode: false,
+};
 
 export function SettingsPanel() {
   const supabase = useMemo(() => createClient(), []);
-  const [settings, setSettings] = useState({
-    homeName: "QA Test Home",
-    address: "100 Test Lane",
-    email: "flowfxdesignsonline@gmail.com",
-    reminderChannel: "email",
-    calendarSync: true,
-    receiptScan: true,
-    darkMode: false,
-  });
-  const [message, setMessage] = useState("Login to sync settings to Supabase.");
+  const [settings, setSettings] = useState<SettingsState>(defaultSettings);
+  const [message, setMessage] = useState("Login to sync settings to your secure account.");
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
@@ -24,11 +56,12 @@ export function SettingsPanel() {
     if (localSettings) {
       const parsedSettings = JSON.parse(localSettings);
       setSettings((current) => ({ ...current, ...parsedSettings }));
+      setLastSavedAt(parsedSettings.savedAt || null);
       document.documentElement.classList.toggle("dark", Boolean(parsedSettings.darkMode));
     }
 
     if (!supabase) {
-      setMessage("Add Supabase env keys to sync settings.");
+      setMessage("Add cloud sync env keys to sync settings.");
       return;
     }
 
@@ -39,14 +72,14 @@ export function SettingsPanel() {
       const activeUser = sessionData.session?.user;
 
       if (!activeUser) {
-        setMessage("Local settings mode. Login to sync settings to Supabase.");
+        setMessage("Local settings mode. Login to sync settings to your secure account.");
         return;
       }
 
       setUserId(activeUser.id);
       const { data, error } = await client
         .from("profiles")
-        .select("full_name,home_name,home_address,home_type")
+        .select("*")
         .eq("id", activeUser.id)
         .maybeSingle();
 
@@ -55,13 +88,23 @@ export function SettingsPanel() {
         return;
       }
 
+      const profile = (data || {}) as ProfileRow;
       setSettings((current) => ({
         ...current,
-        homeName: data?.home_name || current.homeName,
-        address: data?.home_address || current.address,
-        email: activeUser.email || current.email,
+        homeName: profile.home_name || current.homeName,
+        address: profile.home_address || current.address,
+        fullName: profile.full_name && !profile.full_name.includes("@") ? profile.full_name : current.fullName,
+        email: profile.notification_email || activeUser.email || current.email,
+        reminderChannel: profile.reminder_channel || current.reminderChannel,
+        calendarSync: typeof profile.calendar_sync === "boolean" ? profile.calendar_sync : current.calendarSync,
+        receiptScan: typeof profile.receipt_scan === "boolean" ? profile.receipt_scan : current.receiptScan,
+        darkMode: typeof profile.dark_mode === "boolean" ? profile.dark_mode : current.darkMode,
       }));
-      setMessage("Settings connected to Supabase profile.");
+      document.documentElement.classList.toggle("dark", Boolean(profile.dark_mode));
+      const loadedAt = profile.settings_saved_at || profile.updated_at || null;
+      setLastSavedAt(loadedAt);
+      setLastLoadedAt(new Date().toISOString());
+      setMessage(`Settings loaded from your profile at ${formatTimestamp(new Date().toISOString())}.`);
     }
 
     loadProfile();
@@ -69,11 +112,13 @@ export function SettingsPanel() {
 
   const saveSettings = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    localStorage.setItem("homey-settings", JSON.stringify(settings));
+    const savedAt = new Date().toISOString();
+    localStorage.setItem("homey-settings", JSON.stringify({ ...settings, savedAt }));
     document.documentElement.classList.toggle("dark", settings.darkMode);
 
     if (!supabase || !userId) {
-      setMessage("Settings saved locally. Login to sync them to Supabase.");
+      setLastSavedAt(savedAt);
+      setMessage(`Settings saved locally at ${formatTimestamp(savedAt)}. Login to sync them to your secure account.`);
       return;
     }
 
@@ -83,11 +128,23 @@ export function SettingsPanel() {
       home_name: settings.homeName,
       home_address: settings.address,
       home_type: "single_family",
-      full_name: settings.email,
+      full_name: settings.fullName,
+      notification_email: settings.email,
+      reminder_channel: settings.reminderChannel,
+      calendar_sync: settings.calendarSync,
+      receipt_scan: settings.receiptScan,
+      dark_mode: settings.darkMode,
+      settings_saved_at: savedAt,
     });
     setIsSaving(false);
 
-    setMessage(error ? `Could not save profile: ${error.message}` : "Settings saved to Supabase profile.");
+    if (error) {
+      setMessage(`Could not save profile: ${error.message}. Run the latest database schema if the new profile settings columns are missing.`);
+      return;
+    }
+
+    setLastSavedAt(savedAt);
+    setMessage(`Settings backed up to your profile at ${formatTimestamp(savedAt)}.`);
   };
 
   return (
@@ -113,6 +170,9 @@ export function SettingsPanel() {
           </div>
 
           <div className="grid gap-4 md:grid-cols-2">
+            <Field label="First name">
+              <input value={settings.fullName} onChange={(event) => setSettings({ ...settings, fullName: event.target.value })} className="input" placeholder="Liv" />
+            </Field>
             <Field label="Home name">
               <input value={settings.homeName} onChange={(event) => setSettings({ ...settings, homeName: event.target.value })} className="input" />
             </Field>
@@ -138,7 +198,7 @@ export function SettingsPanel() {
 
           <div className="grid gap-4">
             <Field label="Default reminder channel">
-              <select value={settings.reminderChannel} onChange={(event) => setSettings({ ...settings, reminderChannel: event.target.value })} className="input">
+              <select value={settings.reminderChannel} onChange={(event) => setSettings({ ...settings, reminderChannel: event.target.value as ReminderChannel })} className="input">
                 <option value="email">Email</option>
                 <option value="sms">SMS</option>
                 <option value="push">Push</option>
@@ -155,6 +215,17 @@ export function SettingsPanel() {
 
         <div className="xl:col-span-2 rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
           {message}
+        </div>
+
+        <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">
+          <div>
+            <p className="font-semibold text-slate-950 dark:text-white">Last profile backup</p>
+            <p className="mt-1 text-slate-500 dark:text-slate-400">{formatTimestamp(lastSavedAt)}</p>
+          </div>
+          <div>
+            <p className="font-semibold text-slate-950 dark:text-white">Last settings load</p>
+            <p className="mt-1 text-slate-500 dark:text-slate-400">{formatTimestamp(lastLoadedAt)}</p>
+          </div>
         </div>
 
         <div className="xl:col-span-2 flex justify-end">

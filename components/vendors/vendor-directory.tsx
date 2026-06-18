@@ -5,6 +5,7 @@ import { Mail, MapPin, Phone, Plus, Star, Wrench, X, type LucideIcon } from "luc
 import { vendors as seedVendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { Vendor, VendorType } from "@/types/homey";
+import { formatTimestamp } from "@/lib/utils";
 
 const vendorTone = {
   plumbing: "indigo",
@@ -35,6 +36,12 @@ export function VendorDirectory() {
   const [vendors, setVendors] = useState(seedVendors);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState(emptyVendor);
+  const [notice, setNotice] = useState("Vendor records are ready for repair scheduling and reminders.");
+
+  const resetForm = () => {
+    setForm(emptyVendor);
+    setIsModalOpen(false);
+  };
 
   const addVendor = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -54,8 +61,8 @@ export function VendorDirectory() {
     };
 
     setVendors((current) => [nextVendor, ...current]);
-    setForm(emptyVendor);
-    setIsModalOpen(false);
+    setNotice(`${nextVendor.company} saved at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
+    resetForm();
   };
 
   return (
@@ -78,6 +85,10 @@ export function VendorDirectory() {
             Add Vendor
           </button>
         </div>
+      </div>
+
+      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
+        {notice}
       </div>
 
       <div className="grid gap-4 xl:grid-cols-2">
@@ -116,7 +127,7 @@ export function VendorDirectory() {
                 <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">New contact</p>
                 <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Add vendor to address book</h3>
               </div>
-              <button onClick={() => setIsModalOpen(false)} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -161,7 +172,7 @@ export function VendorDirectory() {
             </label>
 
             <div className="mt-6 flex justify-end gap-3">
-              <button onClick={() => setIsModalOpen(false)} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+              <button onClick={resetForm} type="button" className="h-11 rounded-2xl border border-slate-200 px-5 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 Cancel
               </button>
               <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">

@@ -40,7 +40,7 @@ export function UpdatePasswordPanel() {
     event.preventDefault();
 
     if (!supabase) {
-      setMessage("Add Supabase env keys to .env.local to update your password.");
+      setMessage("Add cloud auth env keys to .env.local to update your password.");
       return;
     }
 
@@ -86,7 +86,7 @@ export function UpdatePasswordPanel() {
             Reset your Homey password.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400">
-            Use the recovery email from Supabase to create a new password, then continue managing your home records.
+            Use the recovery email to create a new password, then continue managing your home records.
           </p>
         </section>
 
@@ -96,7 +96,7 @@ export function UpdatePasswordPanel() {
           </div>
           <h2 className="text-2xl font-semibold text-slate-950 dark:text-white">Create new password</h2>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            This page only works after opening a valid Supabase recovery link.
+            This page only works after opening a valid password recovery link.
           </p>
 
           <form onSubmit={updatePassword} className="mt-6 space-y-4">

@@ -21,7 +21,7 @@ export function TaxCreditGuidance({ context }: TaxCreditGuidanceProps) {
             <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-700 dark:text-emerald-200">Energy efficiency tax credits</p>
             <h3 className="mt-2 text-lg font-semibold text-slate-950 dark:text-white">Keep receipts, product details, and install dates together.</h3>
             <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-950/80 dark:text-emerald-50/85">
-              {contextCopy[context]} Federal home energy credits can apply to qualifying efficiency upgrades, but eligibility depends on the home, product standards, install date, rebates, and IRS rules.
+              {contextCopy[context]} Federal home energy credits and some rebate programs can apply to qualifying efficiency upgrades, but eligibility depends on the home, product standards, install date, rebates, and IRS rules.
             </p>
           </div>
         </div>
@@ -38,7 +38,8 @@ export function TaxCreditGuidance({ context }: TaxCreditGuidanceProps) {
       </div>
       <div className="mt-5 grid gap-3 md:grid-cols-3">
         <GuidanceItem title="Common categories" body="Heat pumps, heat pump water heaters, insulation, air sealing, windows, exterior doors, energy audits, panels, solar, geothermal, wind, and battery storage may be worth reviewing." />
-        <GuidanceItem title="What to capture" body="Receipt, contractor invoice, install date, manufacturer/model info, product certification, QMID or manufacturer code when required, rebates, and utility incentives." />
+        <GuidanceItem title="Rebates and incentives" body="Track utility rebates, manufacturer rebates, state incentives, and purchase-price adjustments separately so credit estimates can be reviewed accurately." />
+        <GuidanceItem title="What to capture" body="Receipt, contractor invoice, install date, manufacturer/model info, product certification, QMID or manufacturer code when required, rebate confirmation, and utility incentive paperwork." />
         <GuidanceItem title="How to claim" body="Credits are generally claimed with IRS Form 5695 for the tax year the qualified property is installed. Confirm eligibility before relying on an estimate." />
       </div>
       <div className="mt-4 flex gap-3 rounded-2xl border border-emerald-300/70 bg-white/70 p-3 text-sm leading-6 text-emerald-950 dark:border-emerald-300/20 dark:bg-white/10 dark:text-emerald-50">

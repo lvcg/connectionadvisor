@@ -4,7 +4,7 @@ import { ArrowRight, CheckCircle2, Home, ShieldCheck } from "lucide-react";
 const permissions = [
   "Create and update your Homey profile",
   "Sync expenses, vendors, appliances, and maintenance reminders",
-  "Keep your records protected by Supabase Auth and Row Level Security",
+  "Keep your records protected by secure account access and owner-only data rules",
 ];
 
 export default function OAuthConsentPage() {
@@ -27,7 +27,7 @@ export default function OAuthConsentPage() {
             Connect your Homey workspace.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-slate-500 dark:text-slate-400">
-            This preview route is ready for OAuth consent testing. Continue to login to authenticate with Supabase, then return to the dashboard.
+            This preview route is ready for OAuth consent testing. Continue to login, then return to the dashboard.
           </p>
         </section>
 

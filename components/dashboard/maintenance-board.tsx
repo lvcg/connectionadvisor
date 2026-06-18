@@ -5,6 +5,7 @@ import { Bell, CalendarDays, CalendarPlus, Mail, MessageSquareText, Pencil, Plus
 import { maintenanceTasks, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { MaintenancePriority, MaintenanceStatus, MaintenanceTask, ReminderChannel } from "@/types/homey";
+import { formatTimestamp } from "@/lib/utils";
 
 const priorityTone = {
   critical: "rose",
@@ -63,7 +64,7 @@ export function MaintenanceBoard() {
     setForm(emptyTask);
     setEditingTaskId(null);
     setIsModalOpen(false);
-    setNotice(`${nextTask.title} ${editingTaskId ? "updated" : "saved"} with ${nextTask.reminderChannel || "email"} reminder delivery.`);
+    setNotice(`${nextTask.title} ${editingTaskId ? "updated" : "saved"} at ${formatTimestamp(new Date().toISOString())} with ${nextTask.reminderChannel || "email"} reminder delivery. Form cleared.`);
   };
 
   const editTask = (task: MaintenanceTask) => {

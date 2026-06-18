@@ -62,6 +62,13 @@ create table if not exists public.profiles (
   updated_at timestamptz not null default now()
 );
 
+alter table public.profiles add column if not exists notification_email text;
+alter table public.profiles add column if not exists reminder_channel public.notification_channel not null default 'email';
+alter table public.profiles add column if not exists calendar_sync boolean not null default true;
+alter table public.profiles add column if not exists receipt_scan boolean not null default true;
+alter table public.profiles add column if not exists dark_mode boolean not null default false;
+alter table public.profiles add column if not exists settings_saved_at timestamptz;
+
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CalendarClock, FileScan, Pencil, Plus, ShieldCheck, Trash2, Wrench, X, type LucideIcon } from "lucide-react";
 import { appliances as seedAppliances, vendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, formatTimestamp } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Appliance, ApplianceStatus } from "@/types/homey";
 
@@ -80,13 +80,13 @@ export function ApplianceTracker() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingApplianceId, setEditingApplianceId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyAppliance);
-  const [notice, setNotice] = useState("Demo mode. Login to sync appliances and warranty records to Supabase.");
+  const [notice, setNotice] = useState("Demo mode. Login to sync appliances and warranty records to your secure account.");
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
-      setNotice("Add Supabase env keys to sync appliances.");
+      setNotice("Add cloud sync env keys to sync appliances.");
       return;
     }
 
@@ -98,7 +98,7 @@ export function ApplianceTracker() {
       const activeUserId = sessionData.session?.user.id;
 
       if (!activeUserId) {
-        if (isMounted) setNotice("Demo mode. Login to save appliance records to Supabase.");
+        if (isMounted) setNotice("Demo mode. Login to save appliance records to your secure account.");
         return;
       }
 
@@ -112,7 +112,7 @@ export function ApplianceTracker() {
       if (!isMounted) return;
 
       if (error) {
-        setNotice(`Supabase appliances error: ${error.message}`);
+        setNotice(`Appliance sync error: ${error.message}`);
         return;
       }
 
@@ -149,7 +149,7 @@ export function ApplianceTracker() {
       }
 
       setAppliances((data || []).map((row) => mapAppliance(row as ApplianceRow)));
-      setNotice("Synced with Supabase. Appliance records will save to your account.");
+      setNotice("Synced with your account. Appliance records will save automatically.");
     }
 
     loadAppliances();
@@ -251,13 +251,13 @@ export function ApplianceTracker() {
 
       const saved = mapAppliance(data as ApplianceRow);
       setAppliances((current) => (editingApplianceId ? current.map((item) => (item.id === editingApplianceId ? saved : item)) : [saved, ...current]));
-      setNotice(`${saved.name} ${editingApplianceId ? "updated" : "saved"} to Supabase.`);
+      setNotice(`${saved.name} ${editingApplianceId ? "updated" : "saved"} to your account at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
       resetForm();
       return;
     }
 
     setAppliances((current) => (editingApplianceId ? current.map((item) => (item.id === editingApplianceId ? draft : item)) : [draft, ...current]));
-    setNotice(`${draft.name} ${editingApplianceId ? "updated" : "saved"} locally. Login to sync to Supabase.`);
+    setNotice(`${draft.name} ${editingApplianceId ? "updated" : "saved"} locally at ${formatTimestamp(new Date().toISOString())}. Form cleared. Login to sync changes.`);
     resetForm();
   };
 

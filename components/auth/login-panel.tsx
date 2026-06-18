@@ -87,7 +87,7 @@ export function LoginPanel() {
 
   const signInWithProvider = async (provider: "github" | "google") => {
     if (!supabase) {
-      setMessage("Add Supabase env keys and enable the provider in Supabase Auth settings first.");
+      setMessage("Add cloud auth env keys and enable the provider in your auth settings first.");
       return;
     }
 
@@ -112,7 +112,7 @@ export function LoginPanel() {
     }
 
     if (!supabase) {
-      setMessage("Add Supabase env keys to .env.local to enable password recovery.");
+      setMessage("Add cloud auth env keys to .env.local to enable password recovery.");
       return;
     }
 

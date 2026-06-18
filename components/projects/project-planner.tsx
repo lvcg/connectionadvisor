@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Pencil, Plus, Target, Trash2, X } from "lucide-react";
 import { projects as seedProjects } from "@/lib/demo-data";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatTimestamp } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { TaxCreditGuidance } from "@/components/ui/tax-credit-guidance";
 import type { Project } from "@/types/homey";
@@ -67,7 +67,7 @@ export function ProjectPlanner() {
       if (!editingId) return [nextProject, ...current];
       return current.map((project) => (project.id === editingId ? nextProject : project));
     });
-    setMessage(`${nextProject.name} ${editingId ? "updated" : "added"} in project planner.`);
+    setMessage(`${nextProject.name} ${editingId ? "updated" : "added"} in project planner at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
     resetForm();
   };
 

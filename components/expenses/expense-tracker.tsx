@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ArrowUpDown, FileScan, FileText, Pencil, Plus, Search, Trash2, X } from "lucide-react";
 import { expenses as seedExpenses, projects } from "@/lib/demo-data";
-import { cn, formatCurrency } from "@/lib/utils";
+import { cn, formatCurrency, formatTimestamp } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
 import type { Expense, ExpenseCategory, Project } from "@/types/homey";
 import { Badge } from "@/components/ui/badge";
@@ -90,13 +90,13 @@ export function ExpenseTracker() {
   const [editingExpenseId, setEditingExpenseId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyExpense);
   const [scanMessage, setScanMessage] = useState("Upload or scan a receipt to prefill record details.");
-  const [syncMessage, setSyncMessage] = useState("Demo mode. Sign in to sync expenses with Supabase.");
+  const [syncMessage, setSyncMessage] = useState("Demo mode. Sign in to sync expenses with your secure account.");
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (!supabase) {
-      setSyncMessage("Add Supabase env keys to enable synced expenses.");
+      setSyncMessage("Add cloud sync env keys to enable synced expenses.");
       return;
     }
 
@@ -108,13 +108,13 @@ export function ExpenseTracker() {
       const activeUserId = sessionData.session?.user.id;
 
       if (!activeUserId) {
-        if (isMounted) setSyncMessage("Demo mode. Login to save expenses, projects, and receipts to Supabase.");
+        if (isMounted) setSyncMessage("Demo mode. Login to save expenses, projects, and receipts to your secure account.");
         return;
       }
 
       if (!isMounted) return;
       setUserId(activeUserId);
-      setSyncMessage("Connected to Supabase. Loading your home records...");
+      setSyncMessage("Connected to your secure account. Loading your home records...");
 
       let { data: projectRows, error: projectError } = await client
         .from("projects")
@@ -142,7 +142,7 @@ export function ExpenseTracker() {
       }
 
       if (projectError) {
-        if (isMounted) setSyncMessage(`Supabase projects error: ${projectError.message}`);
+        if (isMounted) setSyncMessage(`Project sync error: ${projectError.message}`);
         return;
       }
 
@@ -153,14 +153,14 @@ export function ExpenseTracker() {
         .order("expense_date", { ascending: false });
 
       if (expenseError) {
-        if (isMounted) setSyncMessage(`Supabase expenses error: ${expenseError.message}`);
+        if (isMounted) setSyncMessage(`Expense sync error: ${expenseError.message}`);
         return;
       }
 
       if (!isMounted) return;
       setProjectOptions((projectRows || []).map((row) => mapProject(row as SupabaseProjectRow)));
       setExpenses((expenseRows || []).map((row) => mapExpense(row as SupabaseExpenseRow)));
-      setSyncMessage("Synced with Supabase. New records will save to your account.");
+      setSyncMessage("Synced with your account. New records will save automatically.");
     }
 
     loadData();
@@ -256,16 +256,16 @@ export function ExpenseTracker() {
       setIsSaving(false);
 
       if (error) {
-        setSyncMessage(`Could not save to Supabase: ${error.message}`);
+        setSyncMessage(`Could not save to your account: ${error.message}`);
         return;
       }
 
       const savedExpense = mapExpense(data as SupabaseExpenseRow);
       setExpenses((current) => (editingExpenseId ? current.map((item) => (item.id === editingExpenseId ? savedExpense : item)) : [savedExpense, ...current]));
-      setSyncMessage(`Expense ${editingExpenseId ? "updated" : "saved"} to Supabase.`);
+      setSyncMessage(`Expense ${editingExpenseId ? "updated" : "saved"} to your account at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
     } else {
       setExpenses((current) => (editingExpenseId ? current.map((item) => (item.id === editingExpenseId ? draftExpense : item)) : [draftExpense, ...current]));
-      setSyncMessage(`Expense ${editingExpenseId ? "updated" : "saved"} locally. Login to sync changes to Supabase.`);
+      setSyncMessage(`Expense ${editingExpenseId ? "updated" : "saved"} locally at ${formatTimestamp(new Date().toISOString())}. Form cleared. Login to sync changes.`);
     }
 
     resetForm();
@@ -438,7 +438,7 @@ export function ExpenseTracker() {
                 </select>
               </Field>
               <Field label="Receipt URL">
-                <input value={form.documentUrl} onChange={(event) => setForm({ ...form, documentUrl: event.target.value })} className="input" placeholder="Supabase Storage URL" />
+                <input value={form.documentUrl} onChange={(event) => setForm({ ...form, documentUrl: event.target.value })} className="input" placeholder="Receipt or document URL" />
               </Field>
               <div className="md:col-span-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-400/20 dark:bg-emerald-400/10">
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">

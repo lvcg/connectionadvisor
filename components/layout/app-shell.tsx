@@ -1,5 +1,10 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarCheck, ClipboardList, Gauge, Home, LogIn, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { formatTimestamp } from "@/lib/utils";
 
 const navigation = [
   { label: "Dashboard", href: "/dashboard", icon: Gauge },
@@ -12,7 +17,57 @@ const navigation = [
   { label: "Login / Signup", href: "/login", icon: LogIn },
 ];
 
+function getFirstName(nameOrEmail?: string | null) {
+  if (!nameOrEmail) return "there";
+  const cleaned = nameOrEmail.includes("@") ? nameOrEmail.split("@")[0] : nameOrEmail;
+  const first = cleaned.trim().split(/\s+/)[0]?.replace(/[._-]+/g, " ");
+  return first ? first.charAt(0).toUpperCase() + first.slice(1) : "there";
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const supabase = useMemo(() => createClient(), []);
+  const [firstName, setFirstName] = useState("there");
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    const localSettings = localStorage.getItem("homey-settings");
+    if (localSettings) {
+      const parsed = JSON.parse(localSettings);
+      setFirstName(getFirstName(parsed.fullName || parsed.email));
+      setLastSavedAt(parsed.savedAt || null);
+    }
+
+    if (!supabase) return;
+
+    const client = supabase;
+    let isMounted = true;
+
+    async function loadProfile() {
+      const { data: sessionData } = await client.auth.getSession();
+      const activeUser = sessionData.session?.user;
+      if (!activeUser || !isMounted) return;
+
+      const { data } = await client
+        .from("profiles")
+        .select("full_name,notification_email,settings_saved_at,updated_at")
+        .eq("id", activeUser.id)
+        .maybeSingle();
+
+      if (!isMounted) return;
+
+      const profile = data as { full_name?: string | null; notification_email?: string | null; settings_saved_at?: string | null; updated_at?: string | null } | null;
+      const displaySource = profile?.full_name || activeUser.user_metadata?.full_name || activeUser.user_metadata?.name || profile?.notification_email || activeUser.email;
+      setFirstName(getFirstName(displaySource));
+      setLastSavedAt(profile?.settings_saved_at || profile?.updated_at || null);
+    }
+
+    loadProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [supabase]);
+
   return (
     <div className="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
       <div className="mx-auto grid max-w-7xl gap-4 lg:grid-cols-[280px_1fr]">
@@ -45,7 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <ShieldCheck className="h-5 w-5" />
             </div>
             <p className="font-semibold">Private by design</p>
-            <p className="mt-1 leading-6 opacity-80">Supabase RLS keeps every home, project, bill, and receipt scoped to its owner.</p>
+            <p className="mt-1 leading-6 opacity-80">Secure account rules keep every home, project, bill, and receipt scoped to its owner.</p>
           </div>
         </aside>
 
@@ -53,7 +108,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200/70 pb-6 dark:border-white/10 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Home command center</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Know what your home costs, needs, and earns back.</h1>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">Welcome back, {firstName}.</h1>
+              <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                Stay ahead of your home's costs, upkeep, and next priorities.
+                <span className="mt-1 block font-medium text-slate-700 dark:text-slate-300">Last saved: {formatTimestamp(lastSavedAt)}</span>
+              </p>
             </div>
             <Link href="/settings" className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
               <Settings className="h-4 w-4" />
