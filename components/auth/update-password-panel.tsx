@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Home, LockKeyhole, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { friendlyAuthError, passwordPolicyMessage } from "@/lib/auth/security";
 
 export function UpdatePasswordPanel() {
   const router = useRouter();
@@ -20,14 +21,19 @@ export function UpdatePasswordPanel() {
     const hash = new URLSearchParams(window.location.hash.replace(/^#/, ""));
     const accessToken = hash.get("access_token");
     const refreshToken = hash.get("refresh_token");
+    const type = hash.get("type");
 
     if (!accessToken || !refreshToken) return;
+    if (type && type !== "recovery") {
+      setMessage("Open a valid password recovery link to update your password.");
+      return;
+    }
 
     supabase.auth
       .setSession({ access_token: accessToken, refresh_token: refreshToken })
       .then(({ error }) => {
         if (error) {
-          setMessage(error.message);
+          setMessage(friendlyAuthError(error.message));
           return;
         }
 
@@ -44,8 +50,9 @@ export function UpdatePasswordPanel() {
       return;
     }
 
-    if (password.length < 6) {
-      setMessage("Password must be at least 6 characters.");
+    const policyError = passwordPolicyMessage(password);
+    if (policyError) {
+      setMessage(policyError);
       return;
     }
 
@@ -58,7 +65,7 @@ export function UpdatePasswordPanel() {
     const { error } = await supabase.auth.updateUser({ password });
     setIsSubmitting(false);
     if (error) {
-      setMessage(error.message);
+      setMessage(friendlyAuthError(error.message));
       return;
     }
 
@@ -103,13 +110,13 @@ export function UpdatePasswordPanel() {
             <Field label="New password">
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={password} onChange={(event) => setPassword(event.target.value)} className="input pl-10" placeholder="Minimum 6 characters" type="password" required />
+                <input value={password} onChange={(event) => setPassword(event.target.value)} className="input pl-10" placeholder="12+ chars, number, symbol" type="password" autoComplete="new-password" minLength={12} required />
               </div>
             </Field>
             <Field label="Confirm password">
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="input pl-10" placeholder="Re-enter password" type="password" required />
+                <input value={confirmPassword} onChange={(event) => setConfirmPassword(event.target.value)} className="input pl-10" placeholder="Re-enter password" type="password" autoComplete="new-password" minLength={12} required />
               </div>
             </Field>
 

@@ -3,8 +3,9 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, Chrome, Github, Home, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
+import { ArrowRight, Chrome, Home, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { friendlyAuthError, isValidEmail, passwordPolicyMessage, safeNextPath, sanitizeEmail } from "@/lib/auth/security";
 
 type AuthMode = "login" | "signup";
 
@@ -18,9 +19,14 @@ export function LoginPanel() {
   const [message, setMessage] = useState("Sign in to sync expenses, vendors, reminders, and receipt records.");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const getNextPath = () => {
+    if (typeof window === "undefined") return "/dashboard";
+    return safeNextPath(new URLSearchParams(window.location.search).get("next"));
+  };
+
   const getRedirectUrl = () => {
     if (typeof window === "undefined") return undefined;
-    return `${window.location.origin}/auth/callback?next=/dashboard`;
+    return `${window.location.origin}/auth/callback?next=${encodeURIComponent(getNextPath())}`;
   };
 
   const getPasswordRecoveryUrl = () => {
@@ -32,30 +38,52 @@ export function LoginPanel() {
     event.preventDefault();
 
     if (!supabase) {
-      setMessage("Add NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to .env.local to enable auth.");
+      setMessage("Add cloud auth env keys to .env.local to enable auth.");
+      return;
+    }
+
+    const cleanEmail = sanitizeEmail(email);
+    if (!isValidEmail(cleanEmail)) {
+      setMessage("Enter a valid email address.");
+      return;
+    }
+
+    if (mode === "signup") {
+      const policyError = passwordPolicyMessage(password);
+      if (policyError) {
+        setMessage(policyError);
+        return;
+      }
+    }
+
+    if (mode === "login" && password.length < 8) {
+      setMessage("Password must be at least 8 characters.");
       return;
     }
 
     setIsSubmitting(true);
     const result =
       mode === "login"
-        ? await supabase.auth.signInWithPassword({ email, password })
+        ? await supabase.auth.signInWithPassword({ email: cleanEmail, password })
         : await supabase.auth.signUp({
-            email,
+            email: cleanEmail,
             password,
-            options: { data: { full_name: name } },
+            options: {
+              emailRedirectTo: getRedirectUrl(),
+              data: { full_name: name.trim() || cleanEmail.split("@")[0] },
+            },
           });
 
     setIsSubmitting(false);
 
     if (result.error) {
-      setMessage(result.error.message);
+      setMessage(friendlyAuthError(result.error.message));
       return;
     }
 
     if (mode === "login") {
       setMessage("Signed in. Opening your Homey dashboard.");
-      router.replace("/dashboard");
+      router.replace(getNextPath());
       router.refresh();
       return;
     }
@@ -64,7 +92,8 @@ export function LoginPanel() {
   };
 
   const sendMagicLink = async () => {
-    if (!email.trim()) {
+    const cleanEmail = sanitizeEmail(email);
+    if (!isValidEmail(cleanEmail)) {
       setMessage("Enter your email first, then send a magic login link.");
       return;
     }
@@ -76,16 +105,16 @@ export function LoginPanel() {
 
     setIsSubmitting(true);
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: cleanEmail,
       options: {
         emailRedirectTo: getRedirectUrl(),
       },
     });
     setIsSubmitting(false);
-    setMessage(error ? error.message : "Magic link sent. Check your inbox to continue.");
+    setMessage(error ? friendlyAuthError(error.message) : "If that email can sign in, a magic link is on the way.");
   };
 
-  const signInWithProvider = async (provider: "github" | "google") => {
+  const signInWithGoogle = async () => {
     if (!supabase) {
       setMessage("Add cloud auth env keys and enable the provider in your auth settings first.");
       return;
@@ -93,7 +122,7 @@ export function LoginPanel() {
 
     setIsSubmitting(true);
     const { error } = await supabase.auth.signInWithOAuth({
-      provider,
+      provider: "google",
       options: {
         redirectTo: getRedirectUrl(),
       },
@@ -101,12 +130,13 @@ export function LoginPanel() {
     setIsSubmitting(false);
 
     if (error) {
-      setMessage(error.message);
+      setMessage(friendlyAuthError(error.message));
     }
   };
 
   const sendPasswordRecovery = async () => {
-    if (!email.trim()) {
+    const cleanEmail = sanitizeEmail(email);
+    if (!isValidEmail(cleanEmail)) {
       setMessage("Enter your email first, then request a password reset.");
       return;
     }
@@ -117,11 +147,11 @@ export function LoginPanel() {
     }
 
     setIsSubmitting(true);
-    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
       redirectTo: getPasswordRecoveryUrl(),
     });
     setIsSubmitting(false);
-    setMessage(error ? error.message : "Password reset email sent. Use the Homey reset link in your inbox.");
+    setMessage(error ? friendlyAuthError(error.message) : "If that email has an account, a password reset link is on the way.");
   };
 
   return (
@@ -183,13 +213,13 @@ export function LoginPanel() {
             <Field label="Email">
               <div className="relative">
                 <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={email} onChange={(event) => setEmail(event.target.value)} className="input pl-10" placeholder="you@example.com" type="email" required />
+                <input value={email} onChange={(event) => setEmail(event.target.value)} className="input pl-10" placeholder="you@example.com" type="email" autoComplete="email" required />
               </div>
             </Field>
             <Field label="Password">
               <div className="relative">
                 <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input value={password} onChange={(event) => setPassword(event.target.value)} className="input pl-10" placeholder="Minimum 6 characters" type="password" required />
+                <input value={password} onChange={(event) => setPassword(event.target.value)} className="input pl-10" placeholder={mode === "signup" ? "12+ chars, number, symbol" : "Your password"} type="password" autoComplete={mode === "login" ? "current-password" : "new-password"} minLength={mode === "signup" ? 12 : 8} required />
               </div>
             </Field>
 
@@ -230,24 +260,15 @@ export function LoginPanel() {
               <Mail className="h-4 w-4" />
               Send magic link
             </button>
-            <div className="grid gap-3 sm:grid-cols-2">
+            <div className="grid gap-3">
               <button
-                onClick={() => signInWithProvider("google")}
+                onClick={signInWithGoogle}
                 disabled={isSubmitting}
                 className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
                 type="button"
               >
                 <Chrome className="h-4 w-4" />
                 Google
-              </button>
-              <button
-                onClick={() => signInWithProvider("github")}
-                disabled={isSubmitting}
-                className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:bg-white/5 dark:text-slate-200 dark:hover:bg-white/10"
-                type="button"
-              >
-                <Github className="h-4 w-4" />
-                GitHub
               </button>
             </div>
           </div>
