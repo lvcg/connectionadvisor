@@ -31,6 +31,7 @@ export type MaintenanceTask = {
   id: string;
   title: string;
   area: string;
+  notes?: string;
   cadence: string;
   dueDate: string;
   reminderDate?: string;
@@ -48,6 +49,7 @@ export type Appliance = {
   location: string;
   installDate: string;
   expectedLifespanYears: number;
+  notes?: string;
   lastServiceDate?: string;
   nextServiceDate: string;
   warrantyExpires?: string;

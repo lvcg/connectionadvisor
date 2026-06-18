@@ -24,6 +24,7 @@ const emptyAppliance = {
   lastServiceDate: "",
   nextServiceDate: new Date().toISOString().slice(0, 10),
   warrantyExpires: "",
+  notes: "",
   status: "excellent" as ApplianceStatus,
   assignedVendorId: "",
 };
@@ -53,6 +54,7 @@ export function ApplianceTracker() {
       location: form.location.trim() || "Unassigned",
       installDate: form.installDate,
       expectedLifespanYears: Number(form.expectedLifespanYears) || 10,
+      notes: form.notes.trim() || undefined,
       lastServiceDate: form.lastServiceDate || undefined,
       nextServiceDate: form.nextServiceDate,
       warrantyExpires: form.warrantyExpires || undefined,
@@ -104,6 +106,12 @@ export function ApplianceTracker() {
               <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{appliance.name}</h3>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{appliance.brand} - {appliance.model}</p>
               <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{appliance.location}</p>
+              {appliance.notes && (
+                <div className="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 text-sm leading-6 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  <span className="font-semibold text-slate-900 dark:text-white">Notes: </span>
+                  {appliance.notes}
+                </div>
+              )}
 
               <div className="mt-5 space-y-3">
                 <div>
@@ -182,6 +190,9 @@ export function ApplianceTracker() {
                   <option value="service-soon">Service soon</option>
                   <option value="replace">Replace</option>
                 </select>
+              </Field>
+              <Field label="Notes">
+                <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} className="input min-h-24 md:col-span-2" placeholder="Service history, filter size, sounds, warranty notes, or repair details" />
               </Field>
             </div>
 

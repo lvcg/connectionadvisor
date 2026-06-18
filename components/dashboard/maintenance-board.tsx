@@ -26,6 +26,7 @@ const emptyTask = {
   reminderDate: "",
   reminderChannel: "email" as ReminderChannel,
   assignedVendorId: "",
+  notes: "",
   priority: "recommended" as MaintenancePriority,
   status: "pending" as MaintenanceStatus,
 };
@@ -44,6 +45,7 @@ export function MaintenanceBoard() {
       id: crypto.randomUUID(),
       title: form.title.trim(),
       area: form.area.trim(),
+      notes: form.notes.trim() || undefined,
       cadence: form.cadence,
       dueDate: form.dueDate,
       reminderDate: form.reminderDate || undefined,
@@ -122,6 +124,12 @@ export function MaintenanceBoard() {
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 {task.area} - {task.cadence}
               </p>
+              {task.notes && (
+                <div className="mt-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 text-sm leading-6 text-slate-600 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                  <span className="font-semibold text-slate-900 dark:text-white">Notes: </span>
+                  {task.notes}
+                </div>
+              )}
               <div className="mt-5 grid gap-2 text-sm">
                 <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200/70 bg-slate-50/80 px-3 py-2 dark:border-white/10 dark:bg-white/5">
                   <span className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400">
@@ -222,6 +230,9 @@ export function MaintenanceBoard() {
                   <option value="critical">Critical</option>
                   <option value="seasonal">Seasonal</option>
                 </select>
+              </Field>
+              <Field label="Notes">
+                <textarea value={form.notes} onChange={(event) => setForm({ ...form, notes: event.target.value })} className="input min-h-24 md:col-span-2" placeholder="Tools, prep steps, parts, warranty details, or safety notes" />
               </Field>
             </div>
 

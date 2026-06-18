@@ -1,15 +1,55 @@
 create extension if not exists pgcrypto;
 
-create type public.project_status as enum ('planning', 'active', 'completed', 'paused');
-create type public.expense_category as enum ('materials', 'labor', 'permits', 'utilities', 'inspection', 'design', 'other');
-create type public.bill_utility_type as enum ('electricity', 'water', 'gas', 'internet', 'trash', 'insurance', 'other');
-create type public.bill_status as enum ('scheduled', 'paid', 'overdue');
-create type public.maintenance_priority as enum ('critical', 'recommended', 'seasonal');
-create type public.maintenance_status as enum ('pending', 'overdue', 'completed');
-create type public.notification_channel as enum ('email', 'push');
-create type public.appliance_status as enum ('excellent', 'monitor', 'service-soon', 'replace');
-create type public.vendor_type as enum ('plumbing', 'electrical', 'hvac', 'roofing', 'landscaping', 'general', 'appliance', 'cleaning', 'other');
-create type public.reminder_status as enum ('scheduled', 'sent', 'dismissed', 'completed');
+do $$ begin
+  create type public.project_status as enum ('planning', 'active', 'completed', 'paused');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.expense_category as enum ('materials', 'labor', 'permits', 'utilities', 'inspection', 'design', 'other');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.bill_utility_type as enum ('electricity', 'water', 'gas', 'internet', 'trash', 'insurance', 'other');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.bill_status as enum ('scheduled', 'paid', 'overdue');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.maintenance_priority as enum ('critical', 'recommended', 'seasonal');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.maintenance_status as enum ('pending', 'overdue', 'completed');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.notification_channel as enum ('email', 'push', 'sms');
+exception when duplicate_object then null;
+end $$;
+alter type public.notification_channel add value if not exists 'sms';
+
+do $$ begin
+  create type public.appliance_status as enum ('excellent', 'monitor', 'service-soon', 'replace');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.vendor_type as enum ('plumbing', 'electrical', 'hvac', 'roofing', 'landscaping', 'general', 'appliance', 'cleaning', 'other');
+exception when duplicate_object then null;
+end $$;
+
+do $$ begin
+  create type public.reminder_status as enum ('scheduled', 'sent', 'dismissed', 'completed');
+exception when duplicate_object then null;
+end $$;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
