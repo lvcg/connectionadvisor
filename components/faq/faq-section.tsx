@@ -12,6 +12,14 @@ const faqs = [
     answer: "Use the Scan or Upload controls on expense and appliance records. Free users can preview the workflow; Plus users store files in the document vault and can edit or delete uploaded metadata.",
   },
   {
+    question: "Are my documents secure?",
+    answer: "Documents are stored in a private storage bucket and tied to your signed-in account. Database rules are designed so each user can only access their own records and files.",
+  },
+  {
+    question: "Can I export documents out of DomiVault?",
+    answer: "Yes. You can open and download stored files from the document vault, and DomiVault Plus includes export report workflows for grouped records like receipts, warranties, maintenance history, and vehicle service documents.",
+  },
+  {
     question: "Can I track rebates and tax credits?",
     answer: "Yes. Energy-efficiency tax credit sections help organize receipts, product details, install dates, rebate confirmations, utility incentives, and Form 5695 review notes.",
   },
