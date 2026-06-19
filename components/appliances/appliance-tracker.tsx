@@ -420,7 +420,25 @@ export function ApplianceTracker() {
 
             <div className="mb-4">
               <PremiumLock title="Warranty document vault" description="Store warranty PDFs, serial-label photos, purchase receipts, and repair documents with edit/delete controls on DomiVault Plus.">
-                <DocumentUploadCard locked title="Warranty documents" description="Scan or upload warranty docs and product photos for this appliance." type="warranty" />
+                <DocumentUploadCard
+                  title="Warranty documents"
+                  description="Scan or upload warranty docs and product photos for this appliance."
+                  type="warranty"
+                  linkedId={editingApplianceId || undefined}
+                  linkedTable="appliance"
+                  onDocumentSaved={(document) => setNotice(`${document.name} saved to warranty vault.`)}
+                  onOcrExtracted={(ocr) => {
+                    if (!ocr.text) {
+                      setNotice(ocr.message);
+                      return;
+                    }
+                    setForm((current) => ({
+                      ...current,
+                      notes: `${current.notes ? `${current.notes}\n` : ""}Warranty OCR: ${ocr.text.slice(0, 220)}`,
+                    }));
+                    setNotice(ocr.message);
+                  }}
+                />
               </PremiumLock>
             </div>
 

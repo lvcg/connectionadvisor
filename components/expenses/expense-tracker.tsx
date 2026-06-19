@@ -468,7 +468,25 @@ export function ExpenseTracker() {
 
             <div className="mt-4">
               <PremiumLock title="Receipt storage" description="Scan, upload, rename, and delete receipt files with secure document history on DomiVault Plus.">
-                <DocumentUploadCard locked title="Receipt documents" description="Attach photos, PDFs, and scanned receipt images to this expense." type="receipt" />
+                <DocumentUploadCard
+                  title="Receipt documents"
+                  description="Attach photos, PDFs, and scanned receipt images to this expense."
+                  type="receipt"
+                  linkedId={editingExpenseId || undefined}
+                  linkedTable="expense"
+                  onDocumentSaved={(document) => setForm((current) => ({ ...current, documentUrl: document.storagePath || document.url }))}
+                  onOcrExtracted={(ocr) => {
+                    const extracted = ocr.extracted || {};
+                    setForm((current) => ({
+                      ...current,
+                      vendor: current.vendor || String(extracted.vendor || ""),
+                      amount: current.amount || String(extracted.amount || ""),
+                      date: current.date || String(extracted.date || new Date().toISOString().slice(0, 10)),
+                      description: current.description || (ocr.text ? ocr.text.slice(0, 140) : current.description),
+                    }));
+                    setScanMessage(ocr.message);
+                  }}
+                />
               </PremiumLock>
             </div>
 

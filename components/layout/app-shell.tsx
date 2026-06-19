@@ -116,6 +116,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <p className="font-semibold">Private by design</p>
             <p className="mt-1 leading-6 opacity-80">Secure account rules keep every home, project, bill, and receipt scoped to its owner.</p>
           </div>
+
+          <div className="mt-4 flex flex-wrap gap-3 px-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+            <Link href="/privacy" className="hover:text-slate-950 dark:hover:text-white">Privacy</Link>
+            <Link href="/terms" className="hover:text-slate-950 dark:hover:text-white">Terms</Link>
+          </div>
         </aside>
 
         <main className="min-w-0 rounded-[2rem] border border-white/70 bg-white/70 p-4 shadow-glass backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.04] sm:p-6">

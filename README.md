@@ -66,6 +66,7 @@ Paid features are represented in the UI with DomiVault Plus locks so the product
 - React and TypeScript
 - Tailwind CSS
 - Supabase Auth, Postgres, Storage, and RLS
+- Tesseract.js OCR for receipt and warranty image scans
 - Recharts
 - Lucide icons
 
@@ -135,6 +136,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 Do not commit `.env.local`. Keep real service keys in Supabase, hosting-provider environment variables, or Supabase Vault for server-side secrets.
 
+Use `.env.production.example` as the production hosting checklist.
+
 ## Supabase Setup
 
 Run the SQL in `supabase/schema.sql` inside the Supabase SQL editor.
@@ -156,6 +159,8 @@ The schema creates:
 - private `receipts` storage bucket
 
 RLS policies are enabled for every app table so authenticated users can only manage rows scoped to their own `auth.uid()`.
+
+Use `supabase/rls-smoke-tests.sql` as the manual two-user RLS checklist after the schema is applied.
 
 ## Auth Setup
 
@@ -198,8 +203,11 @@ Suggested implementation path:
 1. Upload files to `receipts/{user_id}/{document_type}/{file_name}`.
 2. Store metadata in `vault_documents`.
 3. Link rows to expenses, appliances, maintenance tasks, service events, or vehicles.
-4. Add OCR later with a server route or Supabase Edge Function.
-5. Keep edit/delete controls on the metadata record and delete the matching storage object when a document is removed.
+4. Run OCR through the `/api/documents/ocr` route with Tesseract.js for uploaded images and camera scans.
+5. Save extracted OCR text and status on `vault_documents`.
+6. Keep edit/delete controls on the metadata record and delete the matching storage object when a document is removed.
+
+Tesseract OCR supports receipt and warranty photos such as PNG, JPG, WebP, TIFF, GIF, and camera captures. Text-like uploads such as TXT, CSV, JSON, and Markdown are extracted directly. PDF files can still be stored, but image-based PDF OCR would need a PDF-to-image conversion step before Tesseract can read them.
 
 ## Google Calendar and Reminders
 

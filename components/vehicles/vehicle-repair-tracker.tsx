@@ -54,7 +54,7 @@ export function VehicleRepairTracker() {
             </div>
 
             <div className="mt-5">
-              <DocumentUploadCard locked title="Vehicle repair documents" description="Upload repair receipts, registration files, insurance cards, inspection photos, and warranty documents." type="vehicle" />
+              <DocumentUploadCard title="Vehicle repair documents" description="Upload repair receipts, registration files, insurance cards, inspection photos, and warranty documents." type="vehicle" linkedId={vehicle.id} />
             </div>
 
             <button type="button" className="mt-4 inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 text-sm font-semibold text-slate-700 dark:border-white/10 dark:text-slate-200">
