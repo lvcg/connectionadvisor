@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { ThemeProvider } from "@/components/theme/theme-provider";
 
 export const metadata: Metadata = {
   title: "DomiVault | Home and Vehicle Records Vault",
@@ -17,9 +18,23 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const themeScript = `
+    try {
+      const settings = localStorage.getItem("homey-settings");
+      const darkMode = settings ? Boolean(JSON.parse(settings).darkMode) : false;
+      document.documentElement.classList.toggle("dark", darkMode);
+      document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    } catch {}
+  `;
+
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
+      <body>
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }
