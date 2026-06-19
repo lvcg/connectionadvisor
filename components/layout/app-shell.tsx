@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, LogOut, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatTimestamp } from "@/lib/utils";
 
@@ -20,26 +20,39 @@ const navigation = [
   { label: "Login / Signup", href: "/login", icon: LogIn },
 ];
 
+function getStoredProfile() {
+  if (typeof window === "undefined") {
+    return { username: "there", lastSavedAt: null as string | null };
+  }
+
+  try {
+    const localSettings = window.localStorage.getItem("homey-settings");
+    if (!localSettings) return { username: "there", lastSavedAt: null as string | null };
+    const parsed = JSON.parse(localSettings) as { username?: string; fullName?: string; email?: string; savedAt?: string };
+    return {
+      username: formatUsername(parsed.username || parsed.fullName || parsed.email),
+      lastSavedAt: parsed.savedAt || null,
+    };
+  } catch {
+    return { username: "there", lastSavedAt: null as string | null };
+  }
+}
+
 function formatUsername(nameOrEmail?: string | null) {
   if (!nameOrEmail) return "there";
   const cleaned = nameOrEmail.includes("@") ? nameOrEmail.split("@")[0] : nameOrEmail;
-  const username = cleaned.trim().replace(/[._-]+/g, " ");
-  return username ? username.charAt(0).toUpperCase() + username.slice(1) : "there";
+  const username = cleaned.trim();
+  return username || "there";
 }
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const supabase = useMemo(() => createClient(), []);
-  const [username, setUsername] = useState("Flowfxdesignsonline");
-  const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
+  const initialProfile = useMemo(getStoredProfile, []);
+  const [username, setUsername] = useState(initialProfile.username);
+  const [lastSavedAt, setLastSavedAt] = useState<string | null>(initialProfile.lastSavedAt);
+  const [isSignedIn, setIsSignedIn] = useState(false);
 
   useEffect(() => {
-    const localSettings = localStorage.getItem("homey-settings");
-    if (localSettings) {
-      const parsed = JSON.parse(localSettings);
-      setUsername(formatUsername(parsed.username || parsed.fullName || parsed.email));
-      setLastSavedAt(parsed.savedAt || null);
-    }
-
     const handleSettingsSaved = (event: Event) => {
       const detail = (event as CustomEvent<{ username?: string; email?: string; savedAt?: string }>).detail;
       setUsername(formatUsername(detail?.username || detail?.email));
@@ -58,6 +71,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     async function loadProfile() {
       const { data: sessionData } = await client.auth.getSession();
       const activeUser = sessionData.session?.user;
+      setIsSignedIn(Boolean(activeUser));
       if (!activeUser || !isMounted) return;
 
       const { data } = await client
@@ -69,7 +83,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       if (!isMounted) return;
 
       const profile = data as { full_name?: string | null; notification_email?: string | null; settings_saved_at?: string | null; updated_at?: string | null } | null;
-      const displaySource = profile?.full_name || activeUser.user_metadata?.username || activeUser.user_metadata?.full_name || activeUser.user_metadata?.name || profile?.notification_email || activeUser.email;
+      const storedProfile = getStoredProfile();
+      const storedUsername = storedProfile.username === "there" ? "" : storedProfile.username;
+      const displaySource = profile?.full_name || storedUsername || activeUser.user_metadata?.username || activeUser.user_metadata?.full_name || activeUser.user_metadata?.name || profile?.notification_email || activeUser.email;
       setUsername(formatUsername(displaySource));
       setLastSavedAt(profile?.settings_saved_at || profile?.updated_at || null);
     }
@@ -81,6 +97,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       window.removeEventListener("homey-settings-saved", handleSettingsSaved);
     };
   }, [supabase]);
+
+  const handleLogout = async () => {
+    if (supabase) {
+      await supabase.auth.signOut();
+    }
+    setIsSignedIn(false);
+    window.location.href = "/login";
+  };
 
   return (
     <div className="min-h-screen px-4 py-4 sm:px-6 lg:px-8">
@@ -97,7 +121,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
 
           <nav className="mt-6 grid gap-2">
-            {navigation.map((item) => (
+            {navigation.filter((item) => isSignedIn ? item.href !== "/login" : true).map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -107,6 +131,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                 {item.label}
               </Link>
             ))}
+            {isSignedIn && (
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="group flex items-center gap-3 rounded-2xl px-4 py-3 text-left text-sm font-medium text-slate-600 transition-all duration-200 hover:bg-rose-600 hover:text-white dark:text-slate-300"
+              >
+                <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                Logout
+              </button>
+            )}
           </nav>
 
           <div className="mt-8 rounded-3xl border border-emerald-200/80 bg-emerald-50/80 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
@@ -127,7 +161,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <header className="mb-6 flex flex-col justify-between gap-4 border-b border-slate-200/70 pb-6 dark:border-white/10 sm:flex-row sm:items-center">
             <div>
               <p className="text-sm font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300">Home command center</p>
-              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">{username}</h1>
+              <h1 suppressHydrationWarning className="mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-4xl">{username}</h1>
               <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
                 Stay ahead of your home's costs, upkeep, and next priorities.
                 <span className="mt-1 block font-medium text-slate-700 dark:text-slate-300">Last saved: {formatTimestamp(lastSavedAt)}</span>

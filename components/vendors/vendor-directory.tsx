@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Mail, MapPin, Phone, Plus, Star, Wrench, X, type LucideIcon } from "lucide-react";
+import { Mail, MapPin, Pencil, Phone, Plus, Star, Trash2, Wrench, X, type LucideIcon } from "lucide-react";
 import { vendors as seedVendors } from "@/lib/demo-data";
 import { Badge } from "@/components/ui/badge";
 import type { Vendor, VendorType } from "@/types/homey";
@@ -36,19 +36,43 @@ export function VendorDirectory() {
   const [vendors, setVendors] = useState(seedVendors);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [form, setForm] = useState(emptyVendor);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [notice, setNotice] = useState("Vendor records are ready for repair scheduling and reminders.");
 
   const resetForm = () => {
     setForm(emptyVendor);
+    setEditingId(null);
     setIsModalOpen(false);
   };
 
-  const addVendor = (event: React.FormEvent<HTMLFormElement>) => {
+  const openAdd = () => {
+    setForm(emptyVendor);
+    setEditingId(null);
+    setIsModalOpen(true);
+  };
+
+  const openEdit = (vendor: Vendor) => {
+    setForm({
+      company: vendor.company,
+      name: vendor.name,
+      type: vendor.type,
+      phone: vendor.phone,
+      email: vendor.email,
+      address: vendor.address,
+      rating: String(vendor.rating),
+      preferred: vendor.preferred,
+      notes: vendor.notes,
+    });
+    setEditingId(vendor.id);
+    setIsModalOpen(true);
+  };
+
+  const saveVendor = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!form.company.trim() || !form.name.trim()) return;
 
     const nextVendor: Vendor = {
-      id: crypto.randomUUID(),
+      id: editingId || crypto.randomUUID(),
       company: form.company.trim(),
       name: form.name.trim(),
       type: form.type,
@@ -60,9 +84,14 @@ export function VendorDirectory() {
       notes: form.notes.trim(),
     };
 
-    setVendors((current) => [nextVendor, ...current]);
-    setNotice(`${nextVendor.company} saved at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
+    setVendors((current) => editingId ? current.map((vendor) => vendor.id === editingId ? nextVendor : vendor) : [nextVendor, ...current]);
+    setNotice(`${nextVendor.company} ${editingId ? "updated" : "saved"} at ${formatTimestamp(new Date().toISOString())}. Form cleared.`);
     resetForm();
+  };
+
+  const deleteVendor = (vendor: Vendor) => {
+    setVendors((current) => current.filter((item) => item.id !== vendor.id));
+    setNotice(`${vendor.company} deleted from the vendor address book.`);
   };
 
   return (
@@ -77,7 +106,7 @@ export function VendorDirectory() {
             </p>
           </div>
           <button
-            onClick={() => setIsModalOpen(true)}
+            onClick={openAdd}
             className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
             type="button"
           >
@@ -103,9 +132,17 @@ export function VendorDirectory() {
                 <h3 className="text-xl font-semibold text-slate-950 dark:text-white">{vendor.company}</h3>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">{vendor.name}</p>
               </div>
-              <div className="inline-flex items-center gap-1 rounded-2xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 dark:bg-amber-400/10 dark:text-amber-200">
-                <Star className="h-4 w-4 fill-current" />
-                {vendor.rating}
+              <div className="flex flex-wrap items-start justify-end gap-2">
+                <div className="inline-flex items-center gap-1 rounded-2xl bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700 dark:bg-amber-400/10 dark:text-amber-200">
+                  <Star className="h-4 w-4 fill-current" />
+                  {vendor.rating}
+                </div>
+                <button onClick={() => openEdit(vendor)} type="button" className="rounded-xl border border-slate-200 p-2 text-slate-600 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10" aria-label={`Edit ${vendor.company}`}>
+                  <Pencil className="h-4 w-4" />
+                </button>
+                <button onClick={() => deleteVendor(vendor)} type="button" className="rounded-xl border border-rose-200 p-2 text-rose-600 transition-all duration-200 hover:bg-rose-50 dark:border-rose-400/20 dark:hover:bg-rose-400/10" aria-label={`Delete ${vendor.company}`}>
+                  <Trash2 className="h-4 w-4" />
+                </button>
               </div>
             </div>
 
@@ -121,11 +158,11 @@ export function VendorDirectory() {
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
-          <form onSubmit={addVendor} className="w-full max-w-2xl rounded-[2rem] border border-white/60 bg-white p-6 shadow-glass dark:border-white/10 dark:bg-slate-950">
+          <form onSubmit={saveVendor} className="w-full max-w-2xl rounded-[2rem] border border-white/60 bg-white p-6 shadow-glass dark:border-white/10 dark:bg-slate-950">
             <div className="mb-5 flex items-start justify-between gap-4">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">New contact</p>
-                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">Add vendor to address book</h3>
+                <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600">{editingId ? "Edit contact" : "New contact"}</p>
+                <h3 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">{editingId ? "Update vendor contact" : "Add vendor to address book"}</h3>
               </div>
               <button onClick={resetForm} type="button" className="rounded-2xl border border-slate-200 p-2 text-slate-500 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:hover:bg-white/10">
                 <X className="h-5 w-5" />
@@ -176,7 +213,7 @@ export function VendorDirectory() {
                 Cancel
               </button>
               <button type="submit" className="h-11 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-                Save vendor
+                {editingId ? "Save changes" : "Save vendor"}
               </button>
             </div>
           </form>

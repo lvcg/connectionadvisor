@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CalendarDays, Home, Mail, Moon, Save } from "lucide-react";
+import { Bell, CalendarDays, Home, Mail, Moon, Save, Sparkles } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
@@ -34,10 +34,10 @@ type ProfileRow = {
 };
 
 const defaultSettings: SettingsState = {
-  username: "Flowfxdesignsonline",
-  homeName: "QA Test Home",
-  address: "100 Test Lane",
-  email: "flowfxdesignsonline@gmail.com",
+  username: "",
+  homeName: "",
+  address: "",
+  email: "",
   reminderChannel: "email",
   calendarSync: true,
   receiptScan: true,
@@ -180,7 +180,7 @@ export function SettingsPanel() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Username">
-              <input value={settings.username} onChange={(event) => updateSetting("username", event.target.value)} className="input" placeholder="Flowfxdesignsonline" />
+              <input value={settings.username} onChange={(event) => updateSetting("username", event.target.value)} className="input" placeholder="liv4000" />
             </Field>
             <Field label="Home name">
               <input value={settings.homeName} onChange={(event) => updateSetting("homeName", event.target.value)} className="input" />
@@ -226,12 +226,19 @@ export function SettingsPanel() {
           {message}
         </div>
 
-        <div className="xl:col-span-2 rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
+        <div id="plan" className="xl:col-span-2 rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Plan</p>
           <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{settings.planTier === "free" ? "DomiVault Free" : "DomiVault Plus"}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
             Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by billing and are not editable from profile settings.
           </p>
+          <a
+            href="mailto:flowfxdesignsonline@gmail.com?subject=DomiVault%20Plus%20Upgrade"
+            className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
+          >
+            <Sparkles className="h-4 w-4" />
+            Request DomiVault Plus
+          </a>
         </div>
 
         <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">
