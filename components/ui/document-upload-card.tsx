@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, FilePenLine, FileScan, Loader2, Trash2, Upload, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { usePlanTier } from "@/hooks/use-plan-tier";
 import type { VaultDocument, VaultDocumentType } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
 
@@ -82,6 +83,7 @@ export function DocumentUploadCard({
   onOcrExtracted,
 }: DocumentUploadCardProps) {
   const supabase = useMemo(() => createClient(), []);
+  const { isPlus, isLoading: isPlanLoading } = usePlanTier();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -91,8 +93,10 @@ export function DocumentUploadCard({
   const [isCameraOpen, setIsCameraOpen] = useState(false);
 
   useEffect(() => {
-    if (!supabase || locked) {
-      setNotice(locked ? "Document storage is available on DomiVault Plus." : "Add Supabase env keys and login to upload documents.");
+    const isLocked = locked || !isPlus;
+
+    if (!supabase || isLocked) {
+      setNotice(isLocked ? "Document storage is available on DomiVault Plus." : "Add Supabase env keys and login to upload documents.");
       return;
     }
 
@@ -146,7 +150,7 @@ export function DocumentUploadCard({
       isMounted = false;
       stopCamera();
     };
-  }, [linkedId, linkedTable, locked, supabase, title, type]);
+  }, [isPlus, linkedId, linkedTable, locked, supabase, title, type]);
 
   const runOcr = async (file: File): Promise<OcrResult> => {
     const formData = new FormData();
@@ -170,7 +174,7 @@ export function DocumentUploadCard({
   };
 
   const saveFile = async (file: File, source: "upload" | "scan") => {
-    if (locked) {
+    if (locked || !isPlus) {
       setNotice("Document storage is a DomiVault Plus feature.");
       return;
     }
@@ -272,7 +276,7 @@ export function DocumentUploadCard({
   };
 
   const startCamera = async () => {
-    if (locked) {
+    if (locked || !isPlus) {
       setNotice("Document scanning is a DomiVault Plus feature.");
       return;
     }
@@ -324,7 +328,7 @@ export function DocumentUploadCard({
   };
 
   const renameDocument = async (document: VaultDocument) => {
-    if (locked || !supabase) return;
+    if (locked || !isPlus || !supabase) return;
     const nextName = window.prompt("Update document name", document.name);
     if (!nextName?.trim()) return;
 
@@ -339,7 +343,7 @@ export function DocumentUploadCard({
   };
 
   const deleteDocument = async (document: VaultDocument) => {
-    if (locked || !supabase) return;
+    if (locked || !isPlus || !supabase) return;
     const storagePath = document.storagePath || document.url;
 
     setIsBusy(true);
@@ -371,11 +375,11 @@ export function DocumentUploadCard({
           <p className="mt-1 text-sm leading-6 text-slate-500 dark:text-slate-400">{description}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button disabled={locked || isBusy} onClick={() => fileInputRef.current?.click()} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
+          <button disabled={locked || !isPlus || isBusy || isPlanLoading} onClick={() => fileInputRef.current?.click()} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-50 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
             {isBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
             Upload
           </button>
-          <button disabled={locked || isBusy} onClick={startCamera} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50">
+          <button disabled={locked || !isPlus || isBusy || isPlanLoading} onClick={startCamera} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-3 text-xs font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-50">
             <FileScan className="h-4 w-4" />
             Scan
           </button>

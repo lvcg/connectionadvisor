@@ -143,7 +143,6 @@ export function SettingsPanel() {
       calendar_sync: settings.calendarSync,
       receipt_scan: settings.receiptScan,
       dark_mode: settings.darkMode,
-      plan_tier: settings.planTier,
       settings_saved_at: savedAt,
     });
     setIsSaving(false);
@@ -231,11 +230,8 @@ export function SettingsPanel() {
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Plan</p>
           <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{settings.planTier === "free" ? "DomiVault Free" : "DomiVault Plus"}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports.
+            Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by billing and are not editable from profile settings.
           </p>
-          <button onClick={() => updateSetting("planTier", settings.planTier === "free" ? "vault_plus" : "free")} type="button" className="mt-4 inline-flex h-10 items-center justify-center rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white dark:bg-white dark:text-slate-950">
-            {settings.planTier === "free" ? "Preview Plus" : "Switch to Free Preview"}
-          </button>
         </div>
 
         <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">

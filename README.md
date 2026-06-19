@@ -136,6 +136,8 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
 Do not commit `.env.local`. Keep real service keys in Supabase, hosting-provider environment variables, or Supabase Vault for server-side secrets.
 
+Use `.env.production.example` as the production hosting checklist.
+
 ## Supabase Setup
 
 Run the SQL in `supabase/schema.sql` inside the Supabase SQL editor.
@@ -157,6 +159,8 @@ The schema creates:
 - private `receipts` storage bucket
 
 RLS policies are enabled for every app table so authenticated users can only manage rows scoped to their own `auth.uid()`.
+
+Use `supabase/rls-smoke-tests.sql` as the manual two-user RLS checklist after the schema is applied.
 
 ## Auth Setup
 

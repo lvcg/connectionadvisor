@@ -447,11 +447,48 @@ to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy "Users manage own vault documents"
-on public.vault_documents for all
+drop policy if exists "Users manage own vault documents" on public.vault_documents;
+drop policy if exists "Users read own vault documents" on public.vault_documents;
+drop policy if exists "Plus users create own vault documents" on public.vault_documents;
+drop policy if exists "Plus users update own vault documents" on public.vault_documents;
+drop policy if exists "Users delete own vault documents" on public.vault_documents;
+
+create policy "Users read own vault documents"
+on public.vault_documents for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Plus users create own vault documents"
+on public.vault_documents for insert
+to authenticated
+with check (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+);
+
+create policy "Plus users update own vault documents"
+on public.vault_documents for update
 to authenticated
 using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+with check (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+);
+
+create policy "Users delete own vault documents"
+on public.vault_documents for delete
+to authenticated
+using (auth.uid() = user_id);
 
 create policy "Users manage own vehicles"
 on public.vehicles for all
@@ -470,12 +507,23 @@ insert into storage.buckets (id, name, public)
 values ('receipts', 'receipts', false)
 on conflict (id) do nothing;
 
-create policy "Users can upload own receipt files"
+drop policy if exists "Users can upload own receipt files" on storage.objects;
+drop policy if exists "Plus users can upload own receipt files" on storage.objects;
+drop policy if exists "Users can read own receipt files" on storage.objects;
+drop policy if exists "Users can delete own receipt files" on storage.objects;
+
+create policy "Plus users can upload own receipt files"
 on storage.objects for insert
 to authenticated
 with check (
   bucket_id = 'receipts'
   and (storage.foldername(name))[1] = auth.uid()::text
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
 );
 
 create policy "Users can read own receipt files"
