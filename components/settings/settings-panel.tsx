@@ -45,6 +45,16 @@ const defaultSettings: SettingsState = {
   planTier: "free",
 };
 
+function applyTheme(darkMode: boolean) {
+  document.documentElement.classList.toggle("dark", darkMode);
+  document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+  window.dispatchEvent(new CustomEvent("homey-theme-changed", { detail: { darkMode } }));
+}
+
+function saveLocalSettings(settings: SettingsState, savedAt?: string) {
+  localStorage.setItem("homey-settings", JSON.stringify({ ...settings, savedAt }));
+}
+
 export function SettingsPanel() {
   const supabase = useMemo(() => createClient(), []);
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
@@ -64,7 +74,7 @@ export function SettingsPanel() {
       const parsedSettings = JSON.parse(localSettings);
       setSettings((current) => ({ ...current, ...parsedSettings }));
       setLastSavedAt(parsedSettings.savedAt || null);
-      document.documentElement.classList.toggle("dark", Boolean(parsedSettings.darkMode));
+      applyTheme(Boolean(parsedSettings.darkMode));
     }
 
     if (!supabase) {
@@ -96,19 +106,23 @@ export function SettingsPanel() {
       }
 
       const profile = (data || {}) as ProfileRow;
-      setSettings((current) => ({
-        ...current,
-        homeName: profile.home_name || current.homeName,
-        address: profile.home_address || current.address,
-        username: profile.full_name && !profile.full_name.includes("@") ? profile.full_name : current.username,
-        email: profile.notification_email || activeUser.email || current.email,
-        reminderChannel: profile.reminder_channel || current.reminderChannel,
-        calendarSync: typeof profile.calendar_sync === "boolean" ? profile.calendar_sync : current.calendarSync,
-        receiptScan: typeof profile.receipt_scan === "boolean" ? profile.receipt_scan : current.receiptScan,
-        darkMode: typeof profile.dark_mode === "boolean" ? profile.dark_mode : current.darkMode,
-        planTier: profile.plan_tier || current.planTier,
-      }));
-      document.documentElement.classList.toggle("dark", Boolean(profile.dark_mode));
+      setSettings((current) => {
+        const nextSettings = {
+          ...current,
+          homeName: profile.home_name || current.homeName,
+          address: profile.home_address || current.address,
+          username: profile.full_name && !profile.full_name.includes("@") ? profile.full_name : current.username,
+          email: profile.notification_email || activeUser.email || current.email,
+          reminderChannel: profile.reminder_channel || current.reminderChannel,
+          calendarSync: typeof profile.calendar_sync === "boolean" ? profile.calendar_sync : current.calendarSync,
+          receiptScan: typeof profile.receipt_scan === "boolean" ? profile.receipt_scan : current.receiptScan,
+          darkMode: typeof profile.dark_mode === "boolean" ? profile.dark_mode : current.darkMode,
+          planTier: profile.plan_tier || current.planTier,
+        };
+        applyTheme(nextSettings.darkMode);
+        saveLocalSettings(nextSettings, profile.settings_saved_at || profile.updated_at || undefined);
+        return nextSettings;
+      });
       const loadedAt = profile.settings_saved_at || profile.updated_at || null;
       setLastSavedAt(loadedAt);
       setLastLoadedAt(new Date().toISOString());
@@ -121,9 +135,9 @@ export function SettingsPanel() {
   const saveSettings = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const savedAt = new Date().toISOString();
-    localStorage.setItem("homey-settings", JSON.stringify({ ...settings, savedAt }));
+    saveLocalSettings(settings, savedAt);
     window.dispatchEvent(new CustomEvent("homey-settings-saved", { detail: { ...settings, savedAt } }));
-    document.documentElement.classList.toggle("dark", settings.darkMode);
+    applyTheme(settings.darkMode);
 
     if (!supabase || !userId) {
       setLastSavedAt(savedAt);
@@ -216,8 +230,10 @@ export function SettingsPanel() {
             <Toggle icon={CalendarDays} label="Calendar sync" checked={settings.calendarSync} onChange={(checked) => updateSetting("calendarSync", checked)} />
             <Toggle icon={Mail} label="Receipt scan suggestions" checked={settings.receiptScan} onChange={(checked) => updateSetting("receiptScan", checked)} />
             <Toggle icon={Moon} label="Dark mode" checked={settings.darkMode} onChange={(checked) => {
-              updateSetting("darkMode", checked);
-              document.documentElement.classList.toggle("dark", checked);
+              const nextSettings = { ...settings, darkMode: checked };
+              setSettings(nextSettings);
+              saveLocalSettings(nextSettings, lastSavedAt || undefined);
+              applyTheme(checked);
             }} />
           </div>
         </div>
