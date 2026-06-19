@@ -15,10 +15,6 @@ const faqs = [
     question: "Can I track rebates and tax credits?",
     answer: "Yes. Energy-efficiency tax credit sections help organize receipts, product details, install dates, rebate confirmations, utility incentives, and Form 5695 review notes.",
   },
-  {
-    question: "Can DomiVault deploy to Google Play?",
-    answer: "The web app can be packaged as an Android app with a Trusted Web Activity or wrapper after it has a production HTTPS URL, app icons, privacy policy, signed build, and Play Console listing.",
-  },
 ];
 
 export function FAQSection() {
@@ -28,7 +24,7 @@ export function FAQSection() {
         <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">FAQ</p>
         <h2 className="mt-2 text-2xl font-semibold text-slate-950 dark:text-white">DomiVault questions and plan details</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-400">
-          Quick answers for storage, premium locks, receipts, warranties, reports, vehicles, and mobile deployment.
+          Quick answers for storage, premium locks, receipts, warranties, reports, and vehicles.
         </p>
       </div>
 
