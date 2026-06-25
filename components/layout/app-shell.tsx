@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, LogOut, Refrigerator, ReceiptText, Settings, ShieldCheck, UsersRound } from "lucide-react";
+import { CalendarCheck, Car, ClipboardList, FileQuestion, FileText, Gauge, Home, LogIn, LogOut, Refrigerator, ReceiptText, ScanLine, Settings, ShieldCheck, UsersRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { formatTimestamp } from "@/lib/utils";
 
@@ -14,6 +14,7 @@ const navigation = [
   { label: "Appliances", href: "/appliances", icon: Refrigerator },
   { label: "Vehicles", href: "/vehicles", icon: Car },
   { label: "Vendors", href: "/vendors", icon: UsersRound },
+  { label: "Scanner", href: "/scanner", icon: ScanLine },
   { label: "Reports", href: "/reports", icon: FileText },
   { label: "Settings", href: "/settings", icon: Settings },
   { label: "FAQ", href: "/faq", icon: FileQuestion },
