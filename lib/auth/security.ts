@@ -1,4 +1,4 @@
-const protectedPaths = ["/dashboard", "/expenses", "/maintenance", "/appliances", "/vendors", "/projects", "/vehicles", "/reports", "/settings"];
+const protectedPaths = ["/dashboard", "/expenses", "/maintenance", "/appliances", "/vendors", "/projects", "/vehicles", "/scanner", "/reports", "/settings"];
 
 export function isProtectedPath(pathname: string) {
   return protectedPaths.some((path) => pathname === path || pathname.startsWith(`${path}/`));
@@ -41,7 +41,7 @@ export function friendlyAuthError(message?: string) {
     return "That email may already have an account. Try logging in or use password recovery.";
   }
   if (normalized.includes("provider")) {
-    return "This sign-in method is not enabled yet.";
+    return "This sign-in method is not enabled yet. Enable Google in Supabase Auth, then add the Google Client ID and Client Secret.";
   }
   return message || "Something went wrong. Please try again.";
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Chrome, Home, LockKeyhole, Mail, ShieldCheck } from "lucide-react";
@@ -18,6 +18,17 @@ export function LoginPanel() {
   const [name, setName] = useState("");
   const [message, setMessage] = useState("Sign in to sync expenses, vendors, reminders, and receipt records.");
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get("error");
+
+    if (error === "auth_callback") {
+      setMessage("Google sign-in could not be completed. Check that Google is enabled in Supabase and the callback URL is allowed.");
+    }
+  }, []);
 
   const getNextPath = () => {
     if (typeof window === "undefined") return "/dashboard";
@@ -121,15 +132,20 @@ export function LoginPanel() {
     }
 
     setIsSubmitting(true);
+    setMessage("Opening Google sign-in.");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: getRedirectUrl(),
+        scopes: "openid email profile",
+        queryParams: {
+          prompt: "select_account",
+        },
       },
     });
-    setIsSubmitting(false);
 
     if (error) {
+      setIsSubmitting(false);
       setMessage(friendlyAuthError(error.message));
     }
   };
@@ -268,7 +284,7 @@ export function LoginPanel() {
                 type="button"
               >
                 <Chrome className="h-4 w-4" />
-                Google
+                {isSubmitting ? "Opening Google..." : "Continue with Google"}
               </button>
             </div>
           </div>
