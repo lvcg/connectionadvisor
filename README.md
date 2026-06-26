@@ -60,6 +60,24 @@ Recommended recording flow:
 
 Paid features are represented in the UI with DomiVault Plus locks so the product shape is visible while the billing layer is still being connected.
 
+## RevenueCat Billing Startup Path
+
+DomiVault is set up to start with RevenueCat Web Purchase Links. This is the fastest billing path because the app can send logged-in users to a hosted RevenueCat checkout while keeping Plus access controlled by `profiles.plan_tier`.
+
+Recommended RevenueCat setup:
+
+1. Create a RevenueCat project named `DomiVault`.
+2. Create one entitlement named `vault_plus`.
+3. Create monthly and yearly DomiVault Plus products.
+4. Attach both products to the `vault_plus` entitlement.
+5. Create an offering for the Plus products.
+6. Create a hosted Web Purchase Link in RevenueCat Funnels.
+7. Add the production purchase link to Vercel as `NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK`.
+8. Configure RevenueCat webhooks to `https://your-domain.com/api/billing/revenuecat`.
+9. Add `REVENUECAT_WEBHOOK_AUTH_TOKEN` and/or `REVENUECAT_WEBHOOK_SIGNING_SECRET` to Vercel.
+
+The Settings page appends the Supabase user id to the RevenueCat purchase link so purchases can be associated with the signed-in DomiVault account.
+
 ## Tech Stack
 
 - Next.js App Router
@@ -132,6 +150,9 @@ Create `.env.local` in the project root:
 ```bash
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK=https://pay.rev.cat/your_production_token
+REVENUECAT_WEBHOOK_AUTH_TOKEN=your_revenuecat_webhook_auth_value
+REVENUECAT_WEBHOOK_SIGNING_SECRET=your_revenuecat_hmac_signing_secret
 ```
 
 Do not commit `.env.local`. Keep real service keys in Supabase, hosting-provider environment variables, or Supabase Vault for server-side secrets.

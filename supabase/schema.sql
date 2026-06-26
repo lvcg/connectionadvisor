@@ -84,6 +84,11 @@ alter table public.profiles add column if not exists receipt_scan boolean not nu
 alter table public.profiles add column if not exists dark_mode boolean not null default false;
 alter table public.profiles add column if not exists settings_saved_at timestamptz;
 alter table public.profiles add column if not exists plan_tier public.plan_tier not null default 'free';
+alter table public.profiles add column if not exists revenuecat_app_user_id text;
+alter table public.profiles add column if not exists revenuecat_customer_id text;
+alter table public.profiles add column if not exists revenuecat_entitlement text;
+alter table public.profiles add column if not exists revenuecat_subscription_status text;
+alter table public.profiles add column if not exists revenuecat_latest_event_at timestamptz;
 
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),

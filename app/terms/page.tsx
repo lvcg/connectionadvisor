@@ -19,7 +19,7 @@ const termsSections = [
   },
   {
     title: "DomiVault Plus And Paid Features",
-    body: "Some features may require a paid plan, such as receipt storage, warranty tracking, maintenance history, vehicle records, calendar sync, expiration alerts, and exports. Paid access, billing, cancellations, refunds, and subscription status will be governed by the payment provider and plan terms shown at checkout once billing is enabled.",
+    body: "Some features may require a paid plan, such as receipt storage, warranty tracking, maintenance history, vehicle records, calendar sync, expiration alerts, and exports. Paid access, billing, cancellations, refunds, and subscription status are managed through RevenueCat and the plan terms shown during checkout.",
   },
   {
     title: "Exports And Reports",

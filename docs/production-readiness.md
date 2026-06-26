@@ -27,16 +27,17 @@ Set production environment variables:
 ```text
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY
 NEXT_PUBLIC_APP_URL
 TESSERACT_LANG
 ```
 
-Future paid plan variables:
+RevenueCat paid plan variables:
 
 ```text
-STRIPE_SECRET_KEY
-STRIPE_WEBHOOK_SECRET
-NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK
+REVENUECAT_WEBHOOK_AUTH_TOKEN
+REVENUECAT_WEBHOOK_SIGNING_SECRET
 ```
 
 Future monitoring variable:
@@ -47,15 +48,18 @@ SENTRY_DSN
 
 ## Billing Enforcement Still Needed
 
-The database now enforces `vault_plus` before document rows and storage uploads can be created. A real billing provider still needs to update `profiles.plan_tier` from a trusted webhook.
+The database now enforces `vault_plus` before document rows and storage uploads can be created. RevenueCat should update `profiles.plan_tier` from a trusted webhook after purchase events.
 
 Recommended flow:
 
-1. Create Stripe products for Free and DomiVault Plus.
-2. Add checkout and customer portal routes.
-3. Handle Stripe webhooks server-side.
-4. Update `profiles.plan_tier` only from the webhook or a trusted admin action.
-5. Never let the browser directly upgrade its own plan.
+1. Create a RevenueCat project for DomiVault.
+2. Create a `vault_plus` entitlement.
+3. Create DomiVault Plus monthly/yearly products and attach them to `vault_plus`.
+4. Create an offering and a hosted Web Purchase Link.
+5. Add the production purchase link to `NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK`.
+6. Configure a RevenueCat webhook to `/api/billing/revenuecat`.
+7. Update `profiles.plan_tier` only from the webhook or a trusted admin action.
+8. Never let the browser directly upgrade its own plan.
 
 ## QA Checklist
 

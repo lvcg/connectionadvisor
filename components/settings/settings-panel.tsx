@@ -5,6 +5,7 @@ import { Bell, CalendarDays, Home, Mail, Moon, Save, Sparkles, Trash2 } from "lu
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
+import { createRevenueCatPurchaseUrl, hasRevenueCatPurchaseLink } from "@/lib/revenuecat";
 
 type SettingsState = {
   username: string;
@@ -57,6 +58,7 @@ function saveLocalSettings(settings: SettingsState, savedAt?: string) {
 
 export function SettingsPanel() {
   const supabase = useMemo(() => createClient(), []);
+  const revenueCatReady = hasRevenueCatPurchaseLink();
   const [settings, setSettings] = useState<SettingsState>(defaultSettings);
   const [message, setMessage] = useState("Login to sync settings to your secure account.");
   const [lastSavedAt, setLastSavedAt] = useState<string | null>(null);
@@ -291,14 +293,19 @@ export function SettingsPanel() {
           <p className="text-sm font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-300">Plan</p>
           <h3 className="mt-2 text-xl font-semibold text-slate-950 dark:text-white">{settings.planTier === "free" ? "DomiVault Free" : "DomiVault Plus"}</h3>
           <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">
-            Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by billing and are not editable from profile settings.
+            Free includes core home records. Plus unlocks warranty tracking, receipt storage, maintenance history, Google Calendar sync, vehicle repair records, expiration alerts, and export reports. Plan changes are controlled by RevenueCat billing and are not editable from profile settings.
           </p>
+          {!revenueCatReady && (
+            <p className="mt-3 rounded-2xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-950 dark:border-amber-300/20 dark:bg-amber-300/10 dark:text-amber-50">
+              Add <span className="font-semibold">NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK</span> to your hosting environment after creating the RevenueCat Web Purchase Link.
+            </p>
+          )}
           <a
-            href="mailto:flowfxdesignsonline@gmail.com?subject=DomiVault%20Plus%20Upgrade"
+            href={createRevenueCatPurchaseUrl({ appUserId: userId, email: settings.email })}
             className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
           >
             <Sparkles className="h-4 w-4" />
-            Request DomiVault Plus
+            Upgrade with RevenueCat
           </a>
         </div>
 

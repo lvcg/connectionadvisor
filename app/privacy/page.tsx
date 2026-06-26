@@ -19,7 +19,7 @@ const privacySections = [
   },
   {
     title: "Data Sharing",
-    body: "We do not sell user data. We may process data through service providers that help run DomiVault, including Supabase for secure auth, database, and storage infrastructure. Future payment processing may require sharing billing-related details with a payment provider such as Lemon Squeezy, Stripe, RevenueCat, or a similar service.",
+    body: "We do not sell user data. We may process data through service providers that help run DomiVault, including Supabase for secure auth, database, and storage infrastructure, and RevenueCat for subscription access, billing state, and purchase entitlement management.",
   },
   {
     title: "Your Controls",
