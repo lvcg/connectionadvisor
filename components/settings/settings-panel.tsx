@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CalendarDays, Home, Mail, Moon, Save, Sparkles } from "lucide-react";
+import { Bell, CalendarDays, Home, Mail, Moon, Save, Sparkles, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
@@ -63,6 +63,8 @@ export function SettingsPanel() {
   const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [deleteConfirmation, setDeleteConfirmation] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const updateSetting = <Key extends keyof SettingsState>(key: Key, value: SettingsState[Key]) => {
     setSettings((current) => ({ ...current, [key]: value }));
@@ -145,8 +147,7 @@ export function SettingsPanel() {
       return;
     }
 
-    setIsSaving(true);
-    const { error } = await supabase.from("profiles").upsert({
+    const fullProfilePayload = {
       id: userId,
       home_name: settings.homeName,
       home_address: settings.address,
@@ -158,7 +159,30 @@ export function SettingsPanel() {
       receipt_scan: settings.receiptScan,
       dark_mode: settings.darkMode,
       settings_saved_at: savedAt,
-    });
+    };
+    const coreProfilePayload = {
+      id: userId,
+      home_name: settings.homeName,
+      home_address: settings.address,
+      home_type: "single_family",
+      full_name: settings.username,
+    };
+
+    setIsSaving(true);
+    let { error } = await supabase.from("profiles").upsert(fullProfilePayload);
+
+    if (error && (error.message.includes("schema cache") || error.message.includes("column"))) {
+      const retry = await supabase.from("profiles").upsert(coreProfilePayload);
+      error = retry.error;
+
+      if (!error) {
+        setIsSaving(false);
+        setLastSavedAt(savedAt);
+        setMessage(`Username and basic profile saved at ${formatTimestamp(savedAt)}. Optional settings need the latest Supabase schema before they can sync.`);
+        return;
+      }
+    }
+
     setIsSaving(false);
 
     if (error) {
@@ -168,6 +192,27 @@ export function SettingsPanel() {
 
     setLastSavedAt(savedAt);
     setMessage(`Settings backed up to your profile at ${formatTimestamp(savedAt)}.`);
+  };
+
+  const deleteAccount = async () => {
+    if (deleteConfirmation.trim() !== "DELETE") {
+      setMessage("Type DELETE to confirm account deletion.");
+      return;
+    }
+
+    setIsDeleting(true);
+    const response = await fetch("/api/account", { method: "DELETE" });
+    const payload = await response.json().catch(() => ({ message: "Could not delete account." }));
+    setIsDeleting(false);
+
+    if (!response.ok) {
+      setMessage(payload.message || "Could not delete account.");
+      return;
+    }
+
+    localStorage.removeItem("homey-settings");
+    await supabase?.auth.signOut();
+    window.location.href = "/login?account=deleted";
   };
 
   return (
@@ -194,7 +239,7 @@ export function SettingsPanel() {
 
           <div className="grid gap-4 md:grid-cols-2">
             <Field label="Username">
-              <input value={settings.username} onChange={(event) => updateSetting("username", event.target.value)} className="input" placeholder="liv4000" />
+              <input value={settings.username} onChange={(event) => updateSetting("username", event.target.value)} className="input" placeholder="username" />
             </Field>
             <Field label="Home name">
               <input value={settings.homeName} onChange={(event) => updateSetting("homeName", event.target.value)} className="input" />
@@ -275,6 +320,33 @@ export function SettingsPanel() {
           </button>
         </div>
       </form>
+
+      <section className="rounded-3xl border border-rose-200 bg-rose-50 p-5 shadow-sm dark:border-rose-400/20 dark:bg-rose-400/10">
+        <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
+          <div>
+            <p className="text-sm font-semibold uppercase tracking-[0.22em] text-rose-700 dark:text-rose-200">Danger zone</p>
+            <h3 className="mt-2 text-xl font-semibold text-rose-950 dark:text-white">Delete my account</h3>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-rose-900/80 dark:text-rose-50/85">
+              This permanently deletes your DomiVault account and account-owned records. This action requires server-side account deletion to be configured with Supabase.
+            </p>
+          </div>
+          <div className="grid w-full gap-3 lg:w-80">
+            <label className="grid gap-2 text-sm font-semibold text-rose-900 dark:text-rose-50">
+              Type DELETE to confirm
+              <input value={deleteConfirmation} onChange={(event) => setDeleteConfirmation(event.target.value)} className="input" placeholder="DELETE" />
+            </label>
+            <button
+              disabled={isDeleting || deleteConfirmation.trim() !== "DELETE"}
+              onClick={deleteAccount}
+              type="button"
+              className="inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-rose-600 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              <Trash2 className="h-4 w-4" />
+              {isDeleting ? "Deleting..." : "Delete my account"}
+            </button>
+          </div>
+        </div>
+      </section>
     </section>
   );
 }

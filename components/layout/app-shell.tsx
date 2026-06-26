@@ -21,6 +21,13 @@ const navigation = [
   { label: "Login / Signup", href: "/login", icon: LogIn },
 ];
 
+type ShellProfileRow = {
+  full_name?: string | null;
+  notification_email?: string | null;
+  settings_saved_at?: string | null;
+  updated_at?: string | null;
+};
+
 function getStoredProfile() {
   if (typeof window === "undefined") {
     return { username: "there", lastSavedAt: null as string | null };
@@ -75,15 +82,25 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       setIsSignedIn(Boolean(activeUser));
       if (!activeUser || !isMounted) return;
 
-      const { data } = await client
+      const profileResult = await client
         .from("profiles")
         .select("full_name,notification_email,settings_saved_at,updated_at")
         .eq("id", activeUser.id)
         .maybeSingle();
+      let data = profileResult.data as ShellProfileRow | null;
+
+      if (!data) {
+        const fallback = await client
+          .from("profiles")
+          .select("full_name")
+          .eq("id", activeUser.id)
+          .maybeSingle();
+        data = fallback.data as ShellProfileRow | null;
+      }
 
       if (!isMounted) return;
 
-      const profile = data as { full_name?: string | null; notification_email?: string | null; settings_saved_at?: string | null; updated_at?: string | null } | null;
+      const profile = data;
       const storedProfile = getStoredProfile();
       const storedUsername = storedProfile.username === "there" ? "" : storedProfile.username;
       const displaySource = profile?.full_name || storedUsername || activeUser.user_metadata?.username || activeUser.user_metadata?.full_name || activeUser.user_metadata?.name || profile?.notification_email || activeUser.email;

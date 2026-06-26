@@ -28,6 +28,10 @@ export function LoginPanel() {
     if (error === "auth_callback") {
       setMessage("Google sign-in could not be completed. Check that Google is enabled in Supabase and the callback URL is allowed.");
     }
+
+    if (params.get("account") === "deleted") {
+      setMessage("Your DomiVault account has been deleted.");
+    }
   }, []);
 
   const getNextPath = () => {
