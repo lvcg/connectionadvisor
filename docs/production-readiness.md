@@ -6,6 +6,9 @@
 - Supabase schema includes user-scoped RLS for core app tables.
 - Document storage uses the private `receipts` bucket.
 - Vault document insert/update and storage upload policies require `profiles.plan_tier = 'vault_plus'`.
+- Vehicle records, vehicle service events, maintenance history rows, paid reminders, and appliance warranty fields are gated by `profiles.plan_tier = 'vault_plus'`.
+- Profile billing fields are protected by a trigger so browser clients cannot self-upgrade `plan_tier`.
+- Report exports and saved-document OCR run through Plus-gated API routes.
 - Settings can read plan tier but can no longer self-upgrade the account.
 - Document upload, camera scan, delete, metadata save, signed URLs, and Tesseract OCR are wired.
 - Error boundaries post client errors to `/api/monitoring/errors` and log server-side.
@@ -16,9 +19,10 @@
 1. Open Supabase SQL editor.
 2. Run `supabase/schema.sql`.
 3. Confirm `profiles.plan_tier` exists and defaults to `free`.
-4. Confirm `vault_documents.ocr_text` and `vault_documents.ocr_status` exist.
-5. Confirm the `receipts` storage bucket is private.
-6. Run the manual steps in `supabase/rls-smoke-tests.sql` with two test users.
+4. Confirm RevenueCat billing columns exist on `profiles`.
+5. Confirm `vault_documents.ocr_text` and `vault_documents.ocr_status` exist.
+6. Confirm the `receipts` storage bucket is private.
+7. Run the manual steps in `supabase/rls-smoke-tests.sql` with two test users.
 
 ## Must Configure In Hosting
 
@@ -65,7 +69,10 @@ Recommended flow:
 
 - Create two Supabase users and verify records do not cross accounts.
 - Confirm free users cannot upload documents.
+- Confirm free users cannot create vehicle records, maintenance history rows, paid reminders, warranty-tracking appliance rows, or export reports.
+- Confirm free users cannot directly update `profiles.plan_tier`.
 - Confirm Plus users can upload, scan, OCR, rename, open, and delete documents.
+- Confirm Plus users can export reports and create paid records after RevenueCat or an admin action updates `profiles.plan_tier`.
 - Test camera scan on iOS Safari, Android Chrome, desktop Chrome, and desktop Edge.
 - Test responsive layouts at 390px, 768px, 1024px, and 1440px.
 - Test password recovery, magic link, Google OAuth, and sign out.

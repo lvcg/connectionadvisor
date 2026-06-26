@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { createWorker } from "tesseract.js";
+import { requireVaultPlus } from "@/lib/auth/server-plan";
 
 type OcrPayload = {
   text: string;
@@ -58,6 +59,12 @@ async function extractWithTesseract(file: File): Promise<OcrPayload> {
 
 export async function POST(request: Request) {
   try {
+    const plus = await requireVaultPlus();
+
+    if (!plus.ok) {
+      return NextResponse.json({ text: "", status: "failed", message: plus.message } satisfies OcrPayload, { status: plus.status });
+    }
+
     const formData = await request.formData();
     const file = formData.get("file");
 

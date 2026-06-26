@@ -79,8 +79,8 @@ create table if not exists public.profiles (
 
 alter table public.profiles add column if not exists notification_email text;
 alter table public.profiles add column if not exists reminder_channel public.notification_channel not null default 'email';
-alter table public.profiles add column if not exists calendar_sync boolean not null default true;
-alter table public.profiles add column if not exists receipt_scan boolean not null default true;
+alter table public.profiles add column if not exists calendar_sync boolean not null default false;
+alter table public.profiles add column if not exists receipt_scan boolean not null default false;
 alter table public.profiles add column if not exists dark_mode boolean not null default false;
 alter table public.profiles add column if not exists settings_saved_at timestamptz;
 alter table public.profiles add column if not exists plan_tier public.plan_tier not null default 'free';
@@ -89,6 +89,13 @@ alter table public.profiles add column if not exists revenuecat_customer_id text
 alter table public.profiles add column if not exists revenuecat_entitlement text;
 alter table public.profiles add column if not exists revenuecat_subscription_status text;
 alter table public.profiles add column if not exists revenuecat_latest_event_at timestamptz;
+alter table public.profiles alter column calendar_sync set default false;
+alter table public.profiles alter column receipt_scan set default false;
+update public.profiles
+set calendar_sync = false,
+    receipt_scan = false
+where plan_tier = 'free'
+  and (calendar_sync = true or receipt_scan = true);
 
 create table if not exists public.projects (
   id uuid primary key default gen_random_uuid(),
@@ -304,10 +311,53 @@ begin
 end;
 $$;
 
+create or replace function public.protect_profile_billing_fields()
+returns trigger
+language plpgsql
+security definer
+as $$
+begin
+  if auth.role() = 'service_role' then
+    return new;
+  end if;
+
+  if tg_op = 'INSERT' then
+    new.plan_tier = 'free';
+    new.revenuecat_app_user_id = null;
+    new.revenuecat_customer_id = null;
+    new.revenuecat_entitlement = null;
+    new.revenuecat_subscription_status = null;
+    new.revenuecat_latest_event_at = null;
+    new.calendar_sync = false;
+    new.receipt_scan = false;
+    return new;
+  end if;
+
+  new.plan_tier = old.plan_tier;
+  new.revenuecat_app_user_id = old.revenuecat_app_user_id;
+  new.revenuecat_customer_id = old.revenuecat_customer_id;
+  new.revenuecat_entitlement = old.revenuecat_entitlement;
+  new.revenuecat_subscription_status = old.revenuecat_subscription_status;
+  new.revenuecat_latest_event_at = old.revenuecat_latest_event_at;
+
+  if new.plan_tier <> 'vault_plus' then
+    new.calendar_sync = false;
+    new.receipt_scan = false;
+  end if;
+
+  return new;
+end;
+$$;
+
 drop trigger if exists profiles_set_updated_at on public.profiles;
 create trigger profiles_set_updated_at
 before update on public.profiles
 for each row execute function public.set_updated_at();
+
+drop trigger if exists profiles_protect_billing_fields on public.profiles;
+create trigger profiles_protect_billing_fields
+before insert or update on public.profiles
+for each row execute function public.protect_profile_billing_fields();
 
 drop trigger if exists projects_set_updated_at on public.projects;
 create trigger projects_set_updated_at
@@ -404,11 +454,19 @@ drop policy if exists "Users manage own expenses" on public.expenses;
 drop policy if exists "Users manage own bills" on public.bills;
 drop policy if exists "Users manage own vendors" on public.vendors;
 drop policy if exists "Users manage own appliances" on public.appliances;
+drop policy if exists "Users read own appliances" on public.appliances;
+drop policy if exists "Users delete own appliances" on public.appliances;
+drop policy if exists "Users create basic appliance records" on public.appliances;
+drop policy if exists "Users update basic appliance records" on public.appliances;
 drop policy if exists "Users manage own maintenance tasks" on public.maintenance_tasks;
 drop policy if exists "Users manage own service events" on public.service_events;
+drop policy if exists "Plus users manage own service events" on public.service_events;
 drop policy if exists "Users manage own reminders" on public.reminders;
+drop policy if exists "Plus users manage own reminders" on public.reminders;
 drop policy if exists "Users manage own vehicles" on public.vehicles;
+drop policy if exists "Plus users manage own vehicles" on public.vehicles;
 drop policy if exists "Users manage own vehicle service events" on public.vehicle_service_events;
+drop policy if exists "Plus users manage own vehicle service events" on public.vehicle_service_events;
 
 create policy "Users manage own profile"
 on public.profiles for all
@@ -440,11 +498,48 @@ to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy "Users manage own appliances"
-on public.appliances for all
+create policy "Users read own appliances"
+on public.appliances for select
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Users delete own appliances"
+on public.appliances for delete
+to authenticated
+using (auth.uid() = user_id);
+
+create policy "Users create basic appliance records"
+on public.appliances for insert
+to authenticated
+with check (
+  auth.uid() = user_id
+  and (
+    (warranty_expires is null and document_url is null)
+    or exists (
+      select 1
+      from public.profiles
+      where profiles.id = auth.uid()
+        and profiles.plan_tier = 'vault_plus'
+    )
+  )
+);
+
+create policy "Users update basic appliance records"
+on public.appliances for update
 to authenticated
 using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+with check (
+  auth.uid() = user_id
+  and (
+    (warranty_expires is null and document_url is null)
+    or exists (
+      select 1
+      from public.profiles
+      where profiles.id = auth.uid()
+        and profiles.plan_tier = 'vault_plus'
+    )
+  )
+);
 
 create policy "Users manage own maintenance tasks"
 on public.maintenance_tasks for all
@@ -452,17 +547,49 @@ to authenticated
 using (auth.uid() = user_id)
 with check (auth.uid() = user_id);
 
-create policy "Users manage own service events"
+create policy "Plus users manage own service events"
 on public.service_events for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+)
+with check (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+);
 
-create policy "Users manage own reminders"
+create policy "Plus users manage own reminders"
 on public.reminders for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+)
+with check (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+);
 
 drop policy if exists "Users manage own vault documents" on public.vault_documents;
 drop policy if exists "Users read own vault documents" on public.vault_documents;
@@ -507,17 +634,49 @@ on public.vault_documents for delete
 to authenticated
 using (auth.uid() = user_id);
 
-create policy "Users manage own vehicles"
+create policy "Plus users manage own vehicles"
 on public.vehicles for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+)
+with check (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+);
 
-create policy "Users manage own vehicle service events"
+create policy "Plus users manage own vehicle service events"
 on public.vehicle_service_events for all
 to authenticated
-using (auth.uid() = user_id)
-with check (auth.uid() = user_id);
+using (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+)
+with check (
+  auth.uid() = user_id
+  and exists (
+    select 1
+    from public.profiles
+    where profiles.id = auth.uid()
+      and profiles.plan_tier = 'vault_plus'
+  )
+);
 
 -- Storage architecture for receipts and documents.
 insert into storage.buckets (id, name, public)

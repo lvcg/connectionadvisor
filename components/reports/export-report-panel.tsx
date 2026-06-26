@@ -1,8 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import { Download, FileText, TableProperties } from "lucide-react";
 import { PremiumLock } from "@/components/ui/premium-lock";
-import { formatTimestamp } from "@/lib/utils";
 
 const reportTypes = [
   "Home improvement expense report",
@@ -28,44 +28,34 @@ function downloadBlob(filename: string, content: BlobPart, type: string) {
   URL.revokeObjectURL(url);
 }
 
-function downloadCsv(report: string) {
-  const generatedAt = new Date().toISOString();
-  const rows = [
-    ["Report", "Generated At", "Status", "Notes"],
-    [report, generatedAt, "Ready", "Connect live Supabase records for complete export packets."],
-  ];
-  const csv = rows.map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(",")).join("\n");
-  downloadBlob(`${slugify(report)}.csv`, csv, "text/csv;charset=utf-8");
-}
-
-function downloadPdf(report: string) {
-  const generatedAt = formatTimestamp(new Date().toISOString()).replace(/[()]/g, "");
-  const text = `DomiVault ${report}\nGenerated: ${generatedAt}\n\nThis export confirms the report workflow is active. Connect live Supabase data to include full records, receipts, warranties, and service history.`;
-  const escaped = text.replace(/\\/g, "\\\\").replace(/\(/g, "\\(").replace(/\)/g, "\\)").replace(/\n/g, ") Tj T* (");
-  const stream = `BT /F1 14 Tf 54 760 Td (${escaped}) Tj ET`;
-  const objects = [
-    "1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
-    "2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
-    "3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
-    "4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
-    `5 0 obj << /Length ${stream.length} >> stream\n${stream}\nendstream endobj`,
-  ];
-  let pdf = "%PDF-1.4\n";
-  const offsets = [0];
-  for (const object of objects) {
-    offsets.push(pdf.length);
-    pdf += `${object}\n`;
-  }
-  const xrefStart = pdf.length;
-  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
-  offsets.slice(1).forEach((offset) => {
-    pdf += `${String(offset).padStart(10, "0")} 00000 n \n`;
-  });
-  pdf += `trailer << /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefStart}\n%%EOF`;
-  downloadBlob(`${slugify(report)}.pdf`, pdf, "application/pdf");
-}
-
 export function ExportReportPanel() {
+  const [notice, setNotice] = useState("Exports are verified server-side as a DomiVault Plus feature.");
+  const [isExporting, setIsExporting] = useState("");
+
+  const exportReport = async (report: string, format: "csv" | "pdf") => {
+    const exportKey = `${report}-${format}`;
+    setIsExporting(exportKey);
+    setNotice(`Preparing ${format.toUpperCase()} export...`);
+
+    const response = await fetch("/api/reports/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ report, format }),
+    });
+
+    if (!response.ok) {
+      const payload = await response.json().catch(() => ({ message: "Export failed." }));
+      setNotice(response.status === 402 ? "Upgrade to DomiVault Plus to export reports." : payload.message || "Export failed.");
+      setIsExporting("");
+      return;
+    }
+
+    const blob = await response.blob();
+    downloadBlob(`${slugify(report)}.${format}`, blob, response.headers.get("Content-Type") || "application/octet-stream");
+    setNotice(`${report} ${format.toUpperCase()} exported.`);
+    setIsExporting("");
+  };
+
   return (
     <section className="space-y-5">
       <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
@@ -78,6 +68,10 @@ export function ExportReportPanel() {
 
       <PremiumLock title="Report exports" description="PDF, CSV, and document-packet exports are included with DomiVault Plus." />
 
+      <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100">
+        {notice}
+      </div>
+
       <div className="grid gap-4 lg:grid-cols-2">
         {reportTypes.map((report) => (
           <article key={report} className="rounded-3xl border border-slate-200/70 bg-white/85 p-5 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
@@ -87,13 +81,13 @@ export function ExportReportPanel() {
             <h3 className="text-lg font-semibold text-slate-950 dark:text-white">{report}</h3>
             <p className="mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400">Generate a quick export packet for this report type.</p>
             <div className="mt-4 grid gap-2 sm:grid-cols-2">
-              <button onClick={() => downloadCsv(report)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
+              <button disabled={Boolean(isExporting)} onClick={() => exportReport(report, "csv")} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 px-3 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-60 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                 <TableProperties className="h-4 w-4" />
-                CSV
+                {isExporting === `${report}-csv` ? "Preparing..." : "CSV"}
               </button>
-              <button onClick={() => downloadPdf(report)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
+              <button disabled={Boolean(isExporting)} onClick={() => exportReport(report, "pdf")} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 px-3 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md disabled:cursor-not-allowed disabled:opacity-60 dark:bg-white dark:text-slate-950">
                 <Download className="h-4 w-4" />
-                PDF
+                {isExporting === `${report}-pdf` ? "Preparing..." : "PDF"}
               </button>
             </div>
           </article>

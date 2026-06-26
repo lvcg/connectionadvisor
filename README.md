@@ -58,7 +58,11 @@ Recommended recording flow:
 | Vehicle repair records | Preview locked | Included |
 | Export reports | Preview locked | Included |
 
-Paid features are represented in the UI with DomiVault Plus locks so the product shape is visible while the billing layer is still being connected.
+Paid features are represented in the UI with DomiVault Plus locks and backed by Supabase RLS or API route checks for document uploads, warranty tracking, vehicle records, report exports, maintenance history, paid reminders, and synced OCR workflows.
+
+The public `/plus` page explains the current DomiVault Plus value proposition:
+
+> DomiVault helps homeowners keep receipts, warranties, maintenance records, and repair history organized before they need them.
 
 ## RevenueCat Billing Startup Path
 
@@ -77,6 +81,7 @@ Recommended RevenueCat setup:
 9. Add `REVENUECAT_WEBHOOK_AUTH_TOKEN` and/or `REVENUECAT_WEBHOOK_SIGNING_SECRET` to Vercel.
 
 The Settings page appends the Supabase user id to the RevenueCat purchase link so purchases can be associated with the signed-in DomiVault account.
+RevenueCat webhook events update billing fields on `profiles`, while a database trigger prevents normal browser clients from changing `plan_tier` or RevenueCat subscription fields directly.
 
 ## Tech Stack
 
@@ -101,6 +106,7 @@ app/
   maintenance/
   projects/
   reports/
+  plus/
   settings/
   vehicles/
   vendors/

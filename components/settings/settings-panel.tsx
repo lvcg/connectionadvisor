@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Bell, CalendarDays, Home, Mail, Moon, Save, Sparkles, Trash2 } from "lucide-react";
+import { Bell, CalendarDays, Home, Mail, Moon, Save, Trash2 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { PlanTier, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
-import { createRevenueCatPurchaseUrl, hasRevenueCatPurchaseLink } from "@/lib/revenuecat";
+import { hasRevenueCatPurchaseLink } from "@/lib/revenuecat";
+import { RevenueCatUpgradeButton } from "@/components/billing/revenuecat-upgrade-button";
 
 type SettingsState = {
   username: string;
@@ -40,8 +41,8 @@ const defaultSettings: SettingsState = {
   address: "",
   email: "",
   reminderChannel: "email",
-  calendarSync: true,
-  receiptScan: true,
+  calendarSync: false,
+  receiptScan: false,
   darkMode: false,
   planTier: "free",
 };
@@ -274,8 +275,8 @@ export function SettingsPanel() {
                 <option value="push">Push</option>
               </select>
             </Field>
-            <Toggle icon={CalendarDays} label="Calendar sync" checked={settings.calendarSync} onChange={(checked) => updateSetting("calendarSync", checked)} />
-            <Toggle icon={Mail} label="Receipt scan suggestions" checked={settings.receiptScan} onChange={(checked) => updateSetting("receiptScan", checked)} />
+            <Toggle icon={CalendarDays} label="Calendar sync (Plus)" checked={settings.planTier === "vault_plus" && settings.calendarSync} disabled={settings.planTier !== "vault_plus"} onChange={(checked) => updateSetting("calendarSync", checked)} />
+            <Toggle icon={Mail} label="Receipt scan suggestions (Plus)" checked={settings.planTier === "vault_plus" && settings.receiptScan} disabled={settings.planTier !== "vault_plus"} onChange={(checked) => updateSetting("receiptScan", checked)} />
             <Toggle icon={Moon} label="Dark mode" checked={settings.darkMode} onChange={(checked) => {
               const nextSettings = { ...settings, darkMode: checked };
               setSettings(nextSettings);
@@ -300,13 +301,7 @@ export function SettingsPanel() {
               Add <span className="font-semibold">NEXT_PUBLIC_REVENUECAT_PURCHASE_LINK</span> to your hosting environment after creating the RevenueCat Web Purchase Link.
             </p>
           )}
-          <a
-            href={createRevenueCatPurchaseUrl({ appUserId: userId, email: settings.email })}
-            className="mt-4 inline-flex h-11 items-center justify-center gap-2 rounded-2xl bg-slate-950 px-5 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950"
-          >
-            <Sparkles className="h-4 w-4" />
-            Upgrade with RevenueCat
-          </a>
+          <RevenueCatUpgradeButton className="mt-4 h-11 rounded-2xl px-5" label="Upgrade with RevenueCat" />
         </div>
 
         <div className="xl:col-span-2 grid gap-3 rounded-3xl border border-slate-200/70 bg-white/85 p-4 text-sm shadow-sm dark:border-white/10 dark:bg-white/[0.05] md:grid-cols-2">
@@ -367,14 +362,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   );
 }
 
-function Toggle({ icon: Icon, label, checked, onChange }: { icon: typeof Bell; label: string; checked: boolean; onChange: (checked: boolean) => void }) {
+function Toggle({ icon: Icon, label, checked, disabled = false, onChange }: { icon: typeof Bell; label: string; checked: boolean; disabled?: boolean; onChange: (checked: boolean) => void }) {
   return (
     <label className="flex items-center justify-between gap-4 rounded-2xl border border-slate-200/70 bg-slate-50/80 p-3 text-sm font-semibold text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-200">
       <span className="inline-flex items-center gap-2">
         <Icon className="h-4 w-4 text-emerald-600 dark:text-emerald-300" />
         {label}
       </span>
-      <input checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600" type="checkbox" />
+      <input disabled={disabled} checked={checked} onChange={(event) => onChange(event.target.checked)} className="h-4 w-4 rounded border-slate-300 text-emerald-600 disabled:cursor-not-allowed disabled:opacity-50" type="checkbox" />
     </label>
   );
 }

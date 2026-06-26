@@ -1,5 +1,6 @@
 import { LockKeyhole, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { RevenueCatUpgradeButton } from "@/components/billing/revenuecat-upgrade-button";
 
 type PremiumLockProps = {
   title: string;
@@ -9,7 +10,7 @@ type PremiumLockProps = {
   children?: React.ReactNode;
 };
 
-export function PremiumLock({ title, description, cta = "Upgrade to DomiVault Plus", href = "/settings#plan", children }: PremiumLockProps) {
+export function PremiumLock({ title, description, cta = "Upgrade to DomiVault Plus", href = "/plus", children }: PremiumLockProps) {
   return (
     <section className="relative overflow-hidden rounded-3xl border border-amber-200 bg-amber-50/80 p-5 shadow-sm dark:border-amber-300/20 dark:bg-amber-300/10">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -23,10 +24,14 @@ export function PremiumLock({ title, description, cta = "Upgrade to DomiVault Pl
             <p className="mt-2 max-w-3xl text-sm leading-6 text-amber-950/80 dark:text-amber-50/85">{description}</p>
           </div>
         </div>
-        <Link href={href} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
-          <Sparkles className="h-4 w-4" />
-          {cta}
-        </Link>
+        {href === "/plus" ? (
+          <RevenueCatUpgradeButton label={cta} />
+        ) : (
+          <Link href={href} className="inline-flex h-10 shrink-0 items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 text-sm font-semibold text-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
+            <Sparkles className="h-4 w-4" />
+            {cta}
+          </Link>
+        )}
       </div>
       {children && <div className="mt-5 opacity-60">{children}</div>}
     </section>
