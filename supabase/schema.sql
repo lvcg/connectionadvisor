@@ -393,6 +393,18 @@ alter table public.vault_documents enable row level security;
 alter table public.vehicles enable row level security;
 alter table public.vehicle_service_events enable row level security;
 
+drop policy if exists "Users manage own profile" on public.profiles;
+drop policy if exists "Users manage own projects" on public.projects;
+drop policy if exists "Users manage own expenses" on public.expenses;
+drop policy if exists "Users manage own bills" on public.bills;
+drop policy if exists "Users manage own vendors" on public.vendors;
+drop policy if exists "Users manage own appliances" on public.appliances;
+drop policy if exists "Users manage own maintenance tasks" on public.maintenance_tasks;
+drop policy if exists "Users manage own service events" on public.service_events;
+drop policy if exists "Users manage own reminders" on public.reminders;
+drop policy if exists "Users manage own vehicles" on public.vehicles;
+drop policy if exists "Users manage own vehicle service events" on public.vehicle_service_events;
+
 create policy "Users manage own profile"
 on public.profiles for all
 to authenticated
