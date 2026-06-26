@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import type { MaintenancePriority, MaintenanceStatus, MaintenanceTask, ReminderChannel } from "@/types/homey";
 import { formatTimestamp } from "@/lib/utils";
 import { PremiumLock } from "@/components/ui/premium-lock";
+import { createGoogleCalendarMaintenanceUrl } from "@/lib/calendar";
 
 const priorityTone = {
   critical: "rose",
@@ -118,6 +119,11 @@ export function MaintenanceBoard() {
     setNotice(`Calendar file created for "${task.title}".`);
   };
 
+  const openGoogleCalendar = (task: MaintenanceTask) => {
+    window.open(createGoogleCalendarMaintenanceUrl(task), "_blank", "noopener,noreferrer");
+    setNotice(`Opened Google Calendar event draft for "${task.title}". Review it, then save it in Google Calendar.`);
+  };
+
   return (
     <section className="space-y-4">
       <div className="rounded-3xl border border-slate-200/70 bg-white/80 p-6 shadow-sm dark:border-white/10 dark:bg-white/[0.05]">
@@ -186,14 +192,20 @@ export function MaintenanceBoard() {
                 <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Due {task.dueDate}</span>
                 <Badge tone={priorityTone[task.priority]}>{task.priority}</Badge>
               </div>
-              <div className="mt-4 grid grid-cols-2 gap-2">
+              <div className="mt-4 grid gap-2">
+                <button onClick={() => openGoogleCalendar(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-emerald-600 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                  <CalendarPlus className="h-4 w-4" />
+                  Add to Google Calendar
+                </button>
+              </div>
+              <div className="mt-2 grid grid-cols-2 gap-2">
                 <button onClick={() => sendTestReminder(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl border border-slate-200 text-sm font-semibold text-slate-700 transition-all duration-200 hover:bg-slate-100 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/10">
                   <Bell className="h-4 w-4" />
                   Test
                 </button>
                 <button onClick={() => downloadCalendarEvent(task)} type="button" className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-slate-950 text-sm font-semibold text-white transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-white dark:text-slate-950">
                   <CalendarPlus className="h-4 w-4" />
-                  Calendar
+                  .ics file
                 </button>
               </div>
               <div className="mt-2 grid grid-cols-2 gap-2">
@@ -215,7 +227,7 @@ export function MaintenanceBoard() {
         {notice}
       </div>
 
-      <PremiumLock title="Google Calendar sync and maintenance history" description="Add reminders to Google Calendar, keep completed maintenance history, and export service records with DomiVault Plus." />
+      <PremiumLock title="Automatic Google Calendar sync and maintenance history" description="Free accounts can create Google Calendar event drafts from each maintenance card. DomiVault Plus will unlock automatic two-way calendar sync, completed maintenance history, and exportable service records." />
 
       {isModalOpen && (
         <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4 backdrop-blur-sm">
